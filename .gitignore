@@ -1,2 +1,6 @@
 data/
 .DS_Store
+credentials/
+*.pyc
+__pycache__/
+
