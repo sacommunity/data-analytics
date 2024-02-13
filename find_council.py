@@ -1,13 +1,11 @@
 from selenium.webdriver.support import expected_conditions as EC
-# from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-import selenium.webdriver as webdriver
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 import time
 from requests.utils import quote
 from datetime import datetime
-import time
 
 def extract_value_replacing_prefix(text_array, prefix):
     values = [t for t in text_array if t.startswith(prefix)]
@@ -16,12 +14,22 @@ def extract_value_replacing_prefix(text_array, prefix):
         
     return ''
 
-def find_council_by_address(address, timeout_in_seconds = 600):
+'''
+    Finds council by address
+    address: address where organization is located
+    timeout_in_seconds: timeout in seconds until which the program will wait before returning None
+    is_headless: if False, a chrome browser will popup, else the operation will be done in background
+'''
+def find_council_by_address(address, timeout_in_seconds = 600, is_headless = True):
     if address is None or address == '':
         raise Exception('address is required')
     start_time = datetime.now()
     default_time_to_wait_in_seconds = 5
-    with webdriver.Chrome() as driver:
+    options = webdriver.ChromeOptions()
+    if is_headless:
+        options.add_argument("--headless=new")
+        
+    with webdriver.Chrome(options=options) as driver:
         address_encoded = quote(address)
         url = f'https://lga-sa.maps.arcgis.com/apps/instant/lookup/index.html?appid=db6cce7b773746b4a1d4ce544435f9da&find={address_encoded}'
         print('Fetching council for ', address)
@@ -56,6 +64,9 @@ def find_council_by_address(address, timeout_in_seconds = 600):
 
     return {'address': address, 'council_name': council_name, 'electoral_ward': electoral_ward}
 
-print('council details ', find_council_by_address("130 L'Estrange Street, Glenunga"))
+# Test scripts: useful for debugging above function
+# with default timeout, this generally gives data
+# print('council details ', find_council_by_address("130 L'Estrange Street, Glenunga"))
 
-print(find_council_by_address("130 L'Estrange Street, Glenunga", 2))
+# with less timeout, to check test timeout feature. Without timeout, there is possibility of infinite loop
+# print(find_council_by_address("130 L'Estrange Street, Glenunga", 2))
