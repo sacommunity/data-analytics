@@ -1,0 +1,6 @@
+pandas
+openpyxl
+selenium
+requests
+backoff
+
