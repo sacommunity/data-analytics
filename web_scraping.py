@@ -57,6 +57,24 @@ def get_data_from_url(url: str, is_headless:
     print('text value ', text)
     return text
 
+def get_data_from_url_with_retry(url: str, is_headless: 
+                      bool, to_exclude: list, 
+                      timeout_in_seconds: int, 
+                      xpath: str):
+    MAX_RETRY_COUNT = 3
+    retry_count = 0
+    while retry_count < MAX_RETRY_COUNT:
+        try:
+            return get_data_from_url(url, is_headless, to_exclude, timeout_in_seconds, xpath)
+        except TimeoutError as te:
+            print('get_data_from_url_with_retry, Timeout occurred ', te)
+            # TODO, wait for some time and try again
+            retry_count += 1
+            print('get_data_from_url_with_retry, Retrying again because of timeout Retrycount ', retry_count)
+        except Exception as ex:
+            print('get_data_from_url_with_retry, General Exception ', ex)
+            return None
+    
 
 '''
     Finds council by address
@@ -72,7 +90,7 @@ def find_council_by_address(address, timeout_in_seconds = 600, is_headless = Tru
     url = f'https://lga-sa.maps.arcgis.com/apps/instant/lookup/index.html?appid=db6cce7b773746b4a1d4ce544435f9da&find={address_encoded}'
     print('Fetching council for ', address)
     to_exclude = ['Results:1', '', 'Loading...']
-    text = get_data_from_url(url, is_headless, to_exclude, timeout_in_seconds, '//*[@id="resultsPanel"]')
+    text = get_data_from_url_with_retry(url, is_headless, to_exclude, timeout_in_seconds, '//*[@id="resultsPanel"]')
     if text == '':
         return ''
     text_array = text.splitlines()
@@ -93,7 +111,7 @@ def find_address_from_sacommunity_website(url: str, is_headless = True, timeout_
     if url is None or url == '':
         raise Exception('url is required')
     
-    text = get_data_from_url(url, is_headless, [], timeout_in_seconds, '//*[@id="content-area"]/div/div[1]/div[2]/div[2]/div/div[1]/div[1]/div[2]')
+    text = get_data_from_url_with_retry(url, is_headless, [], timeout_in_seconds, '//*[@id="content-area"]/div/div[1]/div[2]/div[2]/div/div[1]/div[1]/div[2]')
     # print('find_address_in_sacommunity text ', text)
     return text
 
