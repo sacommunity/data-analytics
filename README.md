@@ -3,7 +3,7 @@
 This repository will contain the codes for data analysis for sacommunity
 
 
-1. Create Python Virtual Environment. Let's name is sacommunity_data_analytics_venv
+1. Create Python Virtual Environment. Let's name it sacommunity_data_analytics_venv
 Reference: https://docs.python.org/3/library/venv.html
 
 2. create command
