@@ -10,6 +10,9 @@ from threading import Semaphore, Thread
 from selenium.common.exceptions import TimeoutException as SeleniumTimeoutException
 import backoff
 import logging
+import requests
+from bs4 import BeautifulSoup
+import re
 
 
 def extract_value_replacing_prefix(text_array, prefix):
@@ -32,13 +35,17 @@ def on_backoff_handler(details):
     logging.debug(
         "Backing off {wait:0.1f} seconds after {tries} tries calling function {target} with args {args} and kwargs {kwargs}".format(**details))
 
-
+# backoff reference: https://pypi.org/project/backoff/
+# TODO, if the url is no longer valid, and the page redirects, it will raise Timeout exception, because the element by xpath is not available
+# So, gracefully handle such scenario 
 @backoff.on_exception(backoff.expo, SeleniumTimeoutException, max_tries=3, on_backoff=on_backoff_handler)
 def get_data_from_url(url: str,
                       is_headless: bool,
                       to_exclude: list,
                       timeout_in_seconds: int,
                       xpath: str):
+    if url is None or url == '':
+        raise Exception('url is required')
     start_time = datetime.now()
     default_time_to_wait_in_seconds = 5
 
@@ -98,7 +105,6 @@ def get_data_from_url(url: str,
     is_headless: if False, a chrome browser will popup, else the operation will be done in background
 '''
 
-
 def find_council_by_address(address, timeout_in_seconds=600, is_headless=True):
     if address is None or address == '':
         raise Exception('address is required')
@@ -126,12 +132,62 @@ def find_council_by_address(address, timeout_in_seconds=600, is_headless=True):
 # with less timeout, to check test timeout feature. Without timeout, there is possibility of infinite loop
 # print(find_council_by_address("130 L'Estrange Street, Glenunga", 2))
 
+def find_councils_by_addresses(addresses: list, is_headless=True, timeout_in_seconds=600):
+    # maximum number of concurrent requests at a time
+    MAXIMUM_CONCURRENT_REQUESTS = 3
+    semaphore = Semaphore(MAXIMUM_CONCURRENT_REQUESTS)
+
+    threads = []
+
+    def find_council(address, all_councils):
+        with semaphore:
+            try:
+                council = find_council_by_address(
+                    address, timeout_in_seconds, is_headless)
+                all_councils.append(council)
+            except Exception as ex:
+                # simply log the exception, don't raise it further
+                logging.error(ex, exc_info=True)
+
+    all_councils = []
+    for address in addresses:
+        thread = Thread(target=find_council, args=(address, all_councils))
+        threads.append(thread)
+        thread.start()
+
+    # print('Wait for all threads to complete ')
+    for thread in threads:
+        thread.join()
+
+    return all_councils
+
 
 def find_address_from_sacommunity_website(url: str, is_headless=True, timeout_in_seconds=600):
-    if url is None or url == '':
-        raise Exception('url is required')
-
     return get_data_from_url(url, is_headless, [], timeout_in_seconds, '//*[@id="content-area"]/div/div[1]/div[2]/div[2]/div/div[1]/div[1]/div[2]')
+
+# getting council name from sacommunity website based on xpath is not achievable, because the xpath differs based on the contents
+# As the time of this writing, this urls https://sacommunity.org/org/208832-Burnside_Youth_Club and
+# https://sacommunity.org/org/196519-Sturt_Badminton_Club_Inc. has xpath of 
+# //*[@id="content-area"]/div/div[4]
+# //*[@id="content-area"]/div/div[5]
+# So it's okay for now to get the council name based on regular expression, thus used beautiful soup
+# def find_council_from_sacommunity_website(url: str, is_headless=True, timeout_in_seconds=600):
+#     return get_data_from_url(url, is_headless, [], timeout_in_seconds, '//*[@id="content-area"]/div/div[4]')
+
+def get_council_from_sacommunity_website(url):
+    url_response = requests.get(url)
+    soup = BeautifulSoup(url_response.content)
+    council_identifier = "Council:"
+    council_text = soup.find("div", string=re.compile(council_identifier))
+    # print('council text ', council_text)
+    council_name = ''
+    if council_text is not None:
+        council_text = str(council_text)
+        start_index = council_text.index(council_identifier)
+        council_name = council_text[start_index:].replace(council_identifier, '').replace("</div>","").strip()
+
+    return council_name
+
 
 # test function, useful while debugging
 # url = 'https://sacommunity.org/org/208832-Burnside_Youth_Club'
@@ -146,18 +202,17 @@ def find_addresses_from_sacommunity_website(urls: list, is_headless=True, timeou
     threads = []
 
     def find_addr(url, all_address):
-        addr = ''
         with semaphore:
             try:
                 addr = find_address_from_sacommunity_website(
                     url, is_headless, timeout_in_seconds)
+                council = get_council_from_sacommunity_website(url)
+                all_address.append({'url': url, 'address': addr, 'council_in_sacommunity_website': council})
             except Exception as ex:
                 # simply log the exception, don't raise it further
                 logging.error(ex, exc_info=True)
 
-        all_address[url] = addr
-
-    all_address = {}
+    all_address = []
     for url in urls:
         thread = Thread(target=find_addr, args=(url, all_address))
         threads.append(thread)

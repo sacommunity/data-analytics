@@ -3,4 +3,5 @@ openpyxl
 selenium
 requests
 backoff
+beautifulsoup4
 
