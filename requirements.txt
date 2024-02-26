@@ -4,4 +4,6 @@ selenium
 requests
 backoff
 beautifulsoup4
-
+google-auth-oauthlib
+google-api-python-client
+oauth2client

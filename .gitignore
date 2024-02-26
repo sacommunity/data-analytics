@@ -4,5 +4,4 @@ credentials/
 *.pyc
 __pycache__/
 sacommunity_data_analytics_venv/
-
-
+metadata/
