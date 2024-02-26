@@ -7,12 +7,12 @@ from datetime import date
 import os
 import sys
 # insert current path to system path, so that we can import python file
-pwd = os.getcwd()
-root_folder = 'data-analytics'
-da_index = pwd.index(root_folder)
-root_dir = os.path.join(pwd[0:da_index], root_folder)
-sys.path.insert(1, root_dir)
-
+# pwd = os.getcwd()
+# root_folder = 'data-analytics'
+# da_index = pwd.index(root_folder)
+# root_dir = os.path.join(pwd[0:da_index], root_folder)
+# sys.path.insert(1, root_dir)
+sys.path.insert(1, os.getcwd())
 from helpers.date_helper import convert_date_to_yyyy_mm_dd
 from helpers.string_helper import is_null_or_whitespace
 
@@ -63,22 +63,28 @@ class GoogleAnalyticsApiRetrieval():
                 token.write(self.creds.to_json())
 
     def extract_data_from_response(self, response, start_date, end_date):
-        reports = response['reports']
+        reports = response.get('reports')
+        if reports is None:
+            return None
 
         results = []
         for report in reports:
-            column_header = report['columnHeader']
-            data = report['data']
+            column_header = report.get('columnHeader')
+            data = report.get('data')
+            totals = data.get('totals')
+            total_record = totals[0]['values'][0]
+            if int(total_record) == 0:
+                # print('continue for loop to next item')
+                continue
+            dimensions = column_header.get('dimensions')
+            metric_header = column_header.get('metricHeader')
+            metrics = metric_header.get('metricHeaderEntries')
 
-            dimensions = column_header['dimensions']
-            metric_header = column_header['metricHeader']
-            metrics = metric_header['metricHeaderEntries']
-
-            rows = data['rows']
+            rows = data.get('rows')
 
             for row in rows:
-                row_dimensions = row['dimensions']
-                row_metrics = row['metrics']
+                row_dimensions = row.get('dimensions')
+                row_metrics = row.get('metrics')
 
                 result = {'start_date': start_date, 'end_date': end_date}
                 for i in range(len(dimensions)):
@@ -90,9 +96,9 @@ class GoogleAnalyticsApiRetrieval():
                 for i in range(len(metrics)):
                     col_metric = metrics[i]
                     row_metric = row_metrics[i]
-                    row_metric_value = row_metric['values']
+                    row_metric_value = row_metric.get('values')
 
-                    result[col_metric['name']] = row_metric_value[0]
+                    result[col_metric.get('name')] = row_metric_value[0]
 
                 results.append(result)
 
@@ -164,5 +170,13 @@ class GoogleAnalyticsApiRetrieval():
 #                                     oauth_token_filepath=TOKEN_FILE,
 #                                     view_id=view_id)
 
-#     data = ga.get_sessions_by_landing_page(date(2021,12,25), date(2021,12,27))
-#     print('data response ', data)
+    # data = ga.get_sessions_by_gender(date(2021,12,25), date(2021,12,25))
+    # print('data response ', data)
+
+
+    # data = ga.get_sessions_by_age(date(2021,12,25), date(2021,12,25))
+    # print('data response ', data)
+
+
+    # data = ga.get_sessions_by_landing_page(date(2021,12,25), date(2021,12,25))
+    # print('data response ', data)
