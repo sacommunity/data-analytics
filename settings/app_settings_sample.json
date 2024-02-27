@@ -1,5 +1,8 @@
 {
     "GoogleAnalytics": {
         "ViewId": ""
+    },
+    "FileStorage": {
+        "RootDir": "."
     }
 }
