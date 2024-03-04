@@ -62,7 +62,7 @@ class GoogleAnalyticsJobs():
 
                 root_dir = get_file_storage_root_folder_from_settings()
                 file_path = get_data_path(
-                    root_dir, data_frequency, data_module, start_date)
+                    root_dir, data_frequency.name, data_module.name, start_date)
                 print('saving file to ', file_path)
                 save_list_to_csv(data, file_path)
 

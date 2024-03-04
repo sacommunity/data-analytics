@@ -18,18 +18,20 @@ def save_list_to_csv(data : list, file_path):
     df = pd.DataFrame(data)
     df.to_csv(file_path, index=False)
 
-def get_data_path_in_current_directory(data_frequency, module, date_obj: date):
+def get_data_path_in_current_directory(data_frequency_name, module_name, date_obj: date):
     """get data path in current directory"""
-    return get_data_path(".", data_frequency, module, date_obj)
+    return get_data_path(".", data_frequency_name, module_name, date_obj)
 
-def get_data_path(root_dir, data_frequency, module, date_obj: date):
-    """get data path"""
+def get_data_path(root_dir, data_frequency_name: str, module_name:str, date_obj: date):
+    """get data path
+    Note: cannot have DataFrequency object because of circular dependency
+    """
     month_str = str(date_obj.month).zfill(2)
     day_str = str(date_obj.day).zfill(2)
     data_dir_path = os.path.join(root_dir,
                                  "data",
-                                 data_frequency,
-                                 module,
+                                 data_frequency_name,
+                                 module_name,
                                  str(date_obj.year),
                                  month_str,
                                  day_str)
