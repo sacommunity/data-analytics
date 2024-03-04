@@ -50,7 +50,7 @@ class MetadataDto():
         self.module = kwargs.get("module")
         self.last_data_extraction_date = kwargs.get(
             "last_data_extraction_date")
-        self.status = kwargs.get("status")
+        self.job_status = kwargs.get("job_status")
         self.failure_reason = kwargs.get("failure_reason")
         self.created_date = kwargs.get("created_date")
         self.created_date_utc = kwargs.get("created_date_utc")
@@ -81,7 +81,7 @@ def new_metadata(data_frequency: DataFrequency,
             "name": module.name
         },
         'last_data_extraction_date': convert_date_to_yyyy_mm_dd(last_data_extraction_date),
-        "status": {
+        "job_status": {
             "value": status.value,
             "name": status.name
         },
@@ -141,8 +141,8 @@ def save_metadata(data_frequency: DataFrequency,
     create_directory_excluding_filename(file_path)
     all_metadata = load_all_metadata(file_path)
     other_metadata = [m for m in all_metadata if not
-                      (m['module'] == module.value and
-                       m['data_frequency'] == data_frequency.value)]
+                      (m['module'].get('value') == module.value and
+                       m['data_frequency'].get('value') == data_frequency.value)]
     metadata = new_metadata(data_frequency,
                             module,
                             last_date_extraction_date,

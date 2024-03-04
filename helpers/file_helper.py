@@ -1,3 +1,4 @@
+"""File helpers"""
 import os
 import pandas as pd
 import shutil
@@ -29,6 +30,7 @@ def get_data_path(root_dir, data_frequency, module, year, month, day):
     full_path = os.path.join(data_dir_path, file_name)
     return full_path
 
-def remove_file(file_path):
-    """removes file with directory"""
-    shutil.rmtree(file_path)
+def remove_directory(file_path):
+    """removes directory with file contents"""
+    dir_name = os.path.dirname(file_path)
+    shutil.rmtree(dir_name)
