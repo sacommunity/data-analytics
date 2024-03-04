@@ -1,42 +1,85 @@
+"""Google Analytics API methods"""
+from enum import Enum
 import os
 import sys
 sys.path.insert(1, os.getcwd())
-from enum import Enum
+
+# pylint: disable=wrong-import-position
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
-from datetime import date
 
-from helpers.string_helper import is_null_or_whitespace
+from dtos.date_range_dto import DateRangeDto
 from helpers.date_helper import convert_date_to_yyyy_mm_dd
+from helpers.string_helper import is_null_or_whitespace
+# pylint: enable=wrong-import-position
+
 
 class GoogleAuthenticationMethod(Enum):
-    NoValue = 0
-    OAuth = 1
-    ServiceAccount = 2
+    """Authentication methods"""
+    DEFAULT = 0
+    OAUTH = 1
+    SERVICE_ACCOUNT = 2
+
+
+class PageDto():
+    """request config page size and page token"""
+
+    def __init__(self, page_size, page_token) -> None:
+        self.page_size = page_size
+        self.page_token = page_token
+
+    def to_dict(self):
+        """returns dictionary representation of dto"""
+        return self.__dict__
+
+    @classmethod
+    def from_dict(cls, dict_obj):
+        """creates new instance from dictionary"""
+        return cls(**dict_obj)
+
+
+class GoogleAnalyticsRequestConfig():
+    """Request Config: dimensions and metrics"""
+
+    def __init__(self, dimensions, metrics) -> None:
+        self.dimensions = dimensions
+        self.metrics = metrics
+
+    def to_dict(self):
+        """returns dictionary representation of dto"""
+        return self.__dict__
+
+    @classmethod
+    def from_dict(cls, dict_obj):
+        """creates new instance from dictionary"""
+        return cls(**dict_obj)
 
 
 class GoogleAnalyticsApiRetrieval():
+    """Retrieve data from google analytics"""
+
     def __init__(self, google_authentication_method: GoogleAuthenticationMethod,
                  oauth_credentials_filepath: str = '',
                  oauth_token_filepath: str = '',
                  view_id: str = '') -> None:
         self.view_id = view_id
         self.google_authentication_method = google_authentication_method
-        if google_authentication_method == GoogleAuthenticationMethod.OAuth:
+        if google_authentication_method == GoogleAuthenticationMethod.OAUTH:
             if is_null_or_whitespace(oauth_credentials_filepath):
-                raise Exception("oauth credentials filepath is required")
+                raise ValueError("oauth credentials filepath is required")
             self.oauth_credentials_filepath = oauth_credentials_filepath
 
             if is_null_or_whitespace(oauth_token_filepath):
-                raise Exception("oauth token filepath is required")
+                raise ValueError("oauth token filepath is required")
             self.oauth_token_filepath = oauth_token_filepath
 
         self.scopes = ['https://www.googleapis.com/auth/analytics.readonly']
         self.creds = None
 
     def get_oauth_credentials(self):
+        """get oauth credentials"""
         if os.path.exists(self.oauth_token_filepath):
             self.creds = Credentials.from_authorized_user_file(
                 self.oauth_token_filepath, self.scopes)
@@ -46,54 +89,43 @@ class GoogleAnalyticsApiRetrieval():
             flow = InstalledAppFlow.from_client_secrets_file(
                 self.oauth_credentials_filepath, self.scopes)
             self.creds = flow.run_local_server(port=0)
-            with open(self.oauth_token_filepath, 'w') as token:
+            with open(self.oauth_token_filepath, 'w', encoding='UTF-8') as token:
                 token.write(self.creds.to_json())
 
     def refresh_oauth_token(self):
+        """refresh oauth token if expired"""
         if self.creds is None:
             self.get_oauth_credentials()
         elif self.creds.expired:
             self.creds.refresh(Request())
-            with open(self.oauth_token_filepath, 'w') as token:
+            with open(self.oauth_token_filepath, 'w', encoding='UTF-8') as token:
                 token.write(self.creds.to_json())
 
-    def extract_data_from_response(self, response, start_date, end_date):
-        reports = response.get('reports')
-        if reports is None:
-            return None
+    def extract_data_from_response(self, response, date_range: DateRangeDto):
+        """fomat response received from google analytics"""
 
         results = []
-        for report in reports:
+        for report in response.get('reports'):
             column_header = report.get('columnHeader')
-            data = report.get('data')
-            totals = data.get('totals')
-            total_record = totals[0]['values'][0]
-            if int(total_record) == 0:
+            # if total is zero, continue to another
+            if int(report.get('data').get('totals')[0]['values'][0]) == 0:
                 # print('continue for loop to next item')
                 continue
             dimensions = column_header.get('dimensions')
+            dimensions_len = len(dimensions)
             metric_header = column_header.get('metricHeader')
             metrics = metric_header.get('metricHeaderEntries')
+            metrics_len = len(metrics)
 
-            rows = data.get('rows')
+            for row in report.get('data').get('rows'):
+                result = {'start_date': date_range.start_date,
+                          'end_date': date_range.end_date}
+                for i in range(dimensions_len):
+                    result[dimensions[i]] = row.get('dimensions')[i]
 
-            for row in rows:
-                row_dimensions = row.get('dimensions')
-                row_metrics = row.get('metrics')
-
-                result = {'start_date': start_date, 'end_date': end_date}
-                for i in range(len(dimensions)):
-                    col_dimension = dimensions[i]
-                    row_dimension = row_dimensions[i]
-
-                    result[col_dimension] = row_dimension
-
-                for i in range(len(metrics)):
-                    col_metric = metrics[i]
-                    row_metric = row_metrics[i]
-                    row_metric_value = row_metric.get('values')
-
-                    result[col_metric.get('name')] = row_metric_value[0]
+                for i in range(metrics_len):
+                    result[metrics[i].get('name')] = row.get(
+                        'metrics')[i].get('values')[0]
 
                 results.append(result)
 
@@ -101,28 +133,28 @@ class GoogleAnalyticsApiRetrieval():
 
     def get_batch_data(self,
                        view_id: str,
-                       dimensions: list[str],
-                       start_date: date,
-                       end_date: date,
-                       metrics: list[str] = ['sessions'],
-                       page_size=1000,
-                       page_token=None):
+                       request_config: GoogleAnalyticsRequestConfig,
+                       date_range: DateRangeDto,
+                       page_dto: PageDto):
+        """get batch data"""
         self.refresh_oauth_token()
         analytics = build('analyticsreporting', 'v4', credentials=self.creds)
 
-        metrics_list = [{'expression': 'ga:' + m} for m in metrics]
-        dimensions_list = [{'name': 'ga:' + d} for d in dimensions]
+        metrics_list = [{'expression': 'ga:' + m}
+                        for m in request_config.metrics]
+        dimensions_list = [{'name': 'ga:' + d}
+                           for d in request_config.dimensions]
 
         request_body = {
             'reportRequests': [
                 {
-                    'pageSize': page_size,
-                    'pageToken': page_token,
+                    'pageSize': page_dto.page_size,
+                    'pageToken': page_dto.page_token,
                     'viewId': view_id,
                     'dateRanges': [
                         {
-                            'startDate': convert_date_to_yyyy_mm_dd(start_date), 
-                            'endDate': convert_date_to_yyyy_mm_dd(end_date)
+                            'startDate': convert_date_to_yyyy_mm_dd(date_range.start_date),
+                            'endDate': convert_date_to_yyyy_mm_dd(date_range.end_date)
                         }],
                     'metrics': metrics_list,
                     'dimensions': dimensions_list,
@@ -132,22 +164,22 @@ class GoogleAnalyticsApiRetrieval():
 
         return analytics.reports().batchGet(body=request_body).execute()
 
-    def get_data(self, 
-                 view_id: str, 
-                 dimensions: list[str], 
-                 start_date: date, 
-                 end_date: date, 
-                 metrics: list[str] = ['sessions'],
-                 page_size=1000,
-                 page_token=None):
-
+    def get_data(self,
+                 view_id: str,
+                 request_config: GoogleAnalyticsRequestConfig,
+                 date_range: DateRangeDto,
+                 page_dto: PageDto):
+        """get all data"""
         results = []
+        page_token = page_dto.page_token
 
         while True:
-            response = self.get_batch_data(
-                view_id, dimensions, start_date, end_date, metrics, page_size, page_token)
+            response = self.get_batch_data(view_id=view_id,
+                                           request_config=request_config,
+                                           date_range=date_range,
+                                           page_dto=page_dto)
             results.extend(self.extract_data_from_response(
-                response, start_date, end_date))
+                response, date_range))
             page_token = response['reports'][0].get('nextPageToken')
 
             if page_token is None:
@@ -155,35 +187,33 @@ class GoogleAnalyticsApiRetrieval():
 
         return results
 
-    def get_sessions_by_gender(self, start_date: date, end_date: date):
+    def get_sessions_by_gender(self, date_range: DateRangeDto, page: PageDto):
+        """get session data by gender"""
         dimensions = ['customVarValue1', 'userGender']
-        return self.get_data(self.view_id, dimensions, start_date, end_date)
+        metrics = ["sessions"]
+        return self.get_data(view_id=self.view_id,
+                             request_config=GoogleAnalyticsRequestConfig(
+                                 dimensions, metrics),
+                             date_range=date_range,
+                             page_dto=page)
 
-    def get_sessions_by_landing_page(self, start_date: date, end_date: date):
+    def get_sessions_by_landing_page(self, date_range: DateRangeDto, page: PageDto):
+        """get session data with landing page"""
         dimensions = ['customVarValue1', 'landingPagePath',
                       'deviceCategory', 'sourceMedium']
-        return self.get_data(self.view_id, dimensions, start_date, end_date)
+        metrics = ["sessions"]
+        return self.get_data(view_id=self.view_id,
+                             request_config=GoogleAnalyticsRequestConfig(
+                                 dimensions, metrics),
+                             date_range=date_range,
+                             page_dto=page)
 
-    def get_sessions_by_age(self, start_date: date, end_date: date):
+    def get_sessions_by_age(self, date_range: DateRangeDto, page: PageDto):
+        """get sessions data by age"""
         dimensions = ['customVarValue1', 'userAgeBracket']
-        return self.get_data(self.view_id, dimensions, start_date, end_date)
-
-
-# Test Script, to debug
-# if __name__ == '__main__':
-#     CLIENT_SECRETS_FILE = './credentials/credentials.json'
-#     TOKEN_FILE = './credentials/token.json'
-#     view_id = "23837774"
-#     ga = GoogleAnalyticsApiRetrieval(google_authentication_method = GoogleAuthenticationMethod.OAuth,
-#                                     oauth_credentials_filepath= CLIENT_SECRETS_FILE,
-#                                     oauth_token_filepath=TOKEN_FILE,
-#                                     view_id=view_id)
-
-    # data = ga.get_sessions_by_gender(date(2021,12,25), date(2021,12,25))
-    # print('data response ', data)
-
-    # data = ga.get_sessions_by_age(date(2021,12,25), date(2021,12,25))
-    # print('data response ', data)
-
-    # data = ga.get_sessions_by_landing_page(date(2021,12,25), date(2021,12,25))
-    # print('data response ', data)
+        metrics = ["sessions"]
+        return self.get_data(view_id=self.view_id,
+                             request_config=GoogleAnalyticsRequestConfig(
+                                 dimensions, metrics),
+                             date_range=date_range,
+                             page_dto=page)

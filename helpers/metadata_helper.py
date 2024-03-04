@@ -8,10 +8,6 @@ import os
 from helpers.file_helper import create_directory_excluding_filename
 from helpers.date_helper import convert_date_to_yyyy_mm_dd, convert_date_to_yyyy_mm_dd_hh_mm_ss
 
-# Uncomment these to run the methods from the current file as entry point
-# from file_helper import create_directory_excluding_filename
-# from date_helper import convert_date_to_yyyy_mm_dd, convert_date_to_yyyy_mm_dd_hh_mm_ss
-
 DEFAULT_METADATA_FILE_PATH = "./metadata/metadata.json"
 
 
@@ -38,6 +34,23 @@ class DataModule(Enum):
     AGE = 1
     GENDER = 2
     LANDING_PAGE = 3
+
+
+class JobConfig():
+    """Job Config : data_frequency and data_module"""
+    def __init__(self, data_frequency: DataFrequency,
+                 data_module: DataModule) -> None:
+        self.data_frequency = data_frequency
+        self.data_module = data_module
+
+    def to_dict(self):
+        """returns dictionary representation of the jobConfig dto"""
+        return self.__dict__
+
+    @classmethod
+    def from_dict(cls, dict_obj):
+        """creates new instance of jobConfig dto from dictionary"""
+        return cls(**dict_obj)
 
 # Python DTO: https://hackernoon.com/dto-in-python-an-explanation
 
@@ -68,7 +81,7 @@ class MetadataDto():
 def new_metadata(data_frequency: DataFrequency,
                  module: DataModule,
                  last_data_extraction_date: date | datetime,
-                 status: JobStatus,
+                 job_status: JobStatus,
                  failure_reason=''):
     """creates new object for metadata"""
     return {
@@ -82,8 +95,8 @@ def new_metadata(data_frequency: DataFrequency,
         },
         'last_data_extraction_date': convert_date_to_yyyy_mm_dd(last_data_extraction_date),
         "job_status": {
-            "value": status.value,
-            "name": status.name
+            "value": job_status.value,
+            "name": job_status.name
         },
         'failure_reason': failure_reason,
         "created_date": {
@@ -131,8 +144,7 @@ def load_metadata(data_frequency: DataFrequency,
     return None
 
 
-def save_metadata(data_frequency: DataFrequency,
-                  module: DataModule,
+def save_metadata(job_config: JobConfig,
                   last_date_extraction_date: date | datetime,
                   status: JobStatus,
                   failure_reason='',
@@ -141,10 +153,10 @@ def save_metadata(data_frequency: DataFrequency,
     create_directory_excluding_filename(file_path)
     all_metadata = load_all_metadata(file_path)
     other_metadata = [m for m in all_metadata if not
-                      (m['module'].get('value') == module.value and
-                       m['data_frequency'].get('value') == data_frequency.value)]
-    metadata = new_metadata(data_frequency,
-                            module,
+                      (m['module'].get('value') == job_config.data_module.value and
+                       m['data_frequency'].get('value') == job_config.data_frequency.value)]
+    metadata = new_metadata(job_config.data_frequency,
+                            job_config.data_module,
                             last_date_extraction_date,
                             status,
                             failure_reason)
@@ -161,18 +173,3 @@ def get_start_date(last_data_extraction_date: date | datetime, job_status: int):
     if job_status == JobStatus.SUCCESS:
         return last_data_extraction_date + timedelta(days=1)
     return last_data_extraction_date
-
-# save_metadata(DataFrequency.Daily, DataModule.Age, datetime.now(), JobStatus.InProgress)
-# save_metadata(DataFrequency.Weekly, DataModule.Age, datetime.now(), JobStatus.InProgress)
-# save_metadata(DataFrequency.Monthly, DataModule.Age, datetime.now(), JobStatus.InProgress)
-# save_metadata(DataFrequency.Yearly, DataModule.Age, datetime.now(), JobStatus.InProgress)
-
-# save_metadata(DataFrequency.Daily, DataModule.Gender, datetime.now(), JobStatus.Failed)
-# save_metadata(DataFrequency.Weekly, DataModule.Gender, datetime.now(), JobStatus.Success)
-# save_metadata(DataFrequency.Monthly, DataModule.Gender, datetime.now(), JobStatus.InProgress)
-# save_metadata(DataFrequency.Yearly, DataModule.Gender, datetime.now(), JobStatus.Failed)
-
-
-# metadata = load_metadata(DataFrequency.Weekly, DataModule.Age)
-# print('date ', metadata.last_data_extraction_date)
-# print('date type ', type(metadata.last_data_extraction_date))

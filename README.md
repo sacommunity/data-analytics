@@ -1,3 +1,4 @@
+<!-- To preview markdown in vscode in MAC: press CMD + Shift + V  . This helps in editing markdown-->
 # data-analytics-volunteer
 
 This repository will contain the codes for data analysis for sacommunity
@@ -18,5 +19,9 @@ source sacommunity_data_analytics_venv/bin/activate
 pip install -r requirements.txt
 
 
+### pylint
+check warnings from pylint with following command (do not supress warning from pylint unless necessary, resolve as many warnings as possible)
+
+pylint $(git ls-files '*.py')
 
 
