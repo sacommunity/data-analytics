@@ -1,5 +1,6 @@
+"""Google Analytics Jobs Module"""
 import logging
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta
 from data_retrieval.google_analytics_api_retrieval import GoogleAnalyticsApiRetrieval, \
     GoogleAuthenticationMethod, PageDto
 from dtos.date_range_dto import DateRangeDto
@@ -12,6 +13,7 @@ from helpers.settings_helper import get_google_analytics_view_id_from_settings, 
 
 
 class GoogleAnalyticsJobs():
+    """Google Analytics Jobs"""
     def __init__(self, credentials_file_path='./credentials/credentials.json',
                  token_file_path='./credentials/token.json',
                  metadata_file_path="./metadata/metadata.json",
@@ -25,23 +27,22 @@ class GoogleAnalyticsJobs():
     def run_job(self, data_frequency: DataFrequency,
                 data_module: DataModule,
                 end_date: date):
+        """Run Job"""
         job_log = f'data frequency: {data_frequency.name}, data module: {data_module.name}'
         metadata = load_metadata(data_frequency, data_module)
         if metadata.job_status == JobStatus.IN_PROGRESS.value:
-            logging.info(f"Another job is in progress for {job_log}")
+            logging.info("Another job is in progress for %s", job_log)
             return
         start_date = get_start_date(
             metadata.last_data_extraction_date, metadata.job_status)
         try:
             # of the current job is in progress, then don't run another job
             while start_date < end_date:
-                ga = GoogleAnalyticsApiRetrieval(google_authentication_method=GoogleAuthenticationMethod.OAUTH,
-                                                 oauth_credentials_filepath=self.credentials_file_path,
-                                                 oauth_token_filepath=self.token_file_path,
-                                                 view_id=self.view_id)
-
-                logging.info(
-                    f"Running job {job_log} for start date {start_date}")
+                ga = GoogleAnalyticsApiRetrieval(GoogleAuthenticationMethod.OAUTH,
+                                                 self.credentials_file_path,
+                                                 self.token_file_path,
+                                                 self.view_id)
+                logging.info("Running job %s for start date %s", job_log, start_date)
                 save_metadata(JobConfig(data_frequency, data_module),
                               start_date,
                               JobStatus.IN_PROGRESS,
@@ -57,8 +58,7 @@ class GoogleAnalyticsJobs():
                     data = ga.get_sessions_by_landing_page(
                         date_range, page_dto)
                 else:
-                    raise ValueError(
-                        f'Invalid data module {data_module.name}, data_module_value: {data_module.value}')
+                    raise ValueError(f'Invalid data module {data_module.value}')
 
                 root_dir = get_file_storage_root_folder_from_settings()
                 file_path = get_data_path(

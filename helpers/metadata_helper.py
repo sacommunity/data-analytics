@@ -6,7 +6,9 @@ import os
 
 # Comment these to run the methods from the current file as entry point
 from helpers.file_helper import create_directory_excluding_filename
-from helpers.date_helper import convert_date_to_yyyy_mm_dd, convert_date_to_yyyy_mm_dd_hh_mm_ss, convert_yyyy_mm_dd_hh_mm_ss_to_date, convert_yyyy_mm_dd_to_date
+from helpers.date_helper import convert_date_to_yyyy_mm_dd, \
+    convert_date_to_yyyy_mm_dd_hh_mm_ss, convert_yyyy_mm_dd_hh_mm_ss_to_date, \
+    convert_yyyy_mm_dd_to_date
 
 DEFAULT_METADATA_FILE_PATH = "./metadata/metadata.json"
 
@@ -138,7 +140,7 @@ def load_metadata(data_frequency: DataFrequency,
     """Load metadata"""
     all_metadata = load_all_metadata(file_path)
     metadatas = [m for m in all_metadata if m['module']['value'] ==
-                module.value and m['data_frequency']['value'] == data_frequency.value]
+                 module.value and m['data_frequency']['value'] == data_frequency.value]
 
     if len(metadatas) > 0:
         metadata = MetadataDto.from_dict(metadatas[0])
