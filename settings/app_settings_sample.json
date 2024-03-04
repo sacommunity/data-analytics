@@ -4,5 +4,9 @@
     },
     "FileStorage": {
         "RootDir": "."
+    },
+    "GlobalConfig": {
+        "MaximumConcurrentRequests": 3,
+        "DefaultTimeoutInSeconds": 300
     }
 }

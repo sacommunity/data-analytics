@@ -1,29 +1,37 @@
+'''
+    Web scraping
+'''
+import re
+import logging
+import time
+from datetime import datetime
+from threading import Semaphore, Thread
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-import time
-from requests.utils import quote
-from datetime import datetime
-from threading import Semaphore, Thread
 from selenium.common.exceptions import TimeoutException as SeleniumTimeoutException
+from requests.utils import quote
 import backoff
-import logging
 import requests
 from bs4 import BeautifulSoup
-import re
+from helpers.settings_helper import get_maximum_concurrent_requests, get_default_timeout_in_seconds
 
 
 def extract_value_replacing_prefix(text_array, prefix):
+    '''
+    Extract only the value by removing the prefix
+    '''
     values = [t for t in text_array if t.startswith(prefix)]
     if len(values) > 0:
         return values[0].replace(prefix, '').strip()
 
     return ''
 
-
 def get_chrome_options(is_headless):
+    '''
+    Get all the chrome options required for selenium
+    '''
     options = webdriver.ChromeOptions()
     if is_headless:
         options.add_argument("--headless=new")
@@ -32,26 +40,39 @@ def get_chrome_options(is_headless):
 
 
 def on_backoff_handler(details):
+    '''
+    Handler function when the backoff occurs. It simply logs the message
+    '''
     logging.debug(
-        "Backing off {wait:0.1f} seconds after {tries} tries calling function {target} with args {args} and kwargs {kwargs}".format(**details))
+        f"Backing off {details.get('wait'):0.1f} 
+        seconds after {details.get('tries')} 
+        tries calling function {details.get('target')} with args {details.get('args')} 
+        and kwargs {details.get('kwargs')}")
 
 # backoff reference: https://pypi.org/project/backoff/
 # TODO, if the url is no longer valid, and the page redirects, it will raise Timeout exception, because the element by xpath is not available
-# So, gracefully handle such scenario 
-@backoff.on_exception(backoff.expo, SeleniumTimeoutException, max_tries=3, on_backoff=on_backoff_handler)
+# So, gracefully handle such scenario
+@backoff.on_exception(backoff.expo,
+                      SeleniumTimeoutException,
+                      max_tries=3, 
+                      on_backoff=on_backoff_handler)
 def get_data_from_url(url: str,
                       is_headless: bool,
                       to_exclude: list,
                       timeout_in_seconds: int,
                       xpath: str):
+    '''
+    Get data from url. This is especially for javascript enabled websites.
+    If we need data from static websites, simply use requests.get()
+    '''
     if url is None or url == '':
         raise Exception('url is required')
     start_time = datetime.now()
-    default_time_to_wait_in_seconds = 5
+    default_wait_secs = 5
 
     options = get_chrome_options(is_headless)
     with webdriver.Chrome(options=options) as driver:
-        logging.info('Fetching data from url ', url)
+        logging.info(f'Fetching data from url {url}')
         driver.get(url)
         text = ''
         while True:
@@ -60,12 +81,13 @@ def get_data_from_url(url: str,
             if len(rows) > 0:
                 text = rows[0].text
             # wait some seconds before next try
-            time_to_sleep_in_seconds = default_time_to_wait_in_seconds if timeout_in_seconds > default_time_to_wait_in_seconds else timeout_in_seconds
-            time.sleep(time_to_sleep_in_seconds)
+            sleep_timeout = default_wait_secs if timeout_in_seconds > default_wait_secs else timeout_in_seconds
+            time.sleep(sleep_timeout)
             if text not in to_exclude:
                 break
 
-            # if we couldnot find data in timeout, then simply ignore it, else there is possibility of infinite loop
+            # if we couldnot find data in timeout, 
+            # then simply ignore it, else there is possibility of infinite loop
             difference_time = datetime.now() - start_time
             if difference_time.total_seconds() > timeout_in_seconds:
                 print(f'Wait Timeout of {timeout_in_seconds} seconds exceeded')
@@ -98,20 +120,22 @@ def get_data_from_url(url: str,
 #             return None
 
 
-'''
+
+def find_council_by_address(address, timeout_in_seconds=600, is_headless=True):
+    '''
     Finds council by address
     address: address where organization is located
     timeout_in_seconds: timeout in seconds until which the program will wait before returning None
-    is_headless: if False, a chrome browser will popup, else the operation will be done in background
-'''
-
-def find_council_by_address(address, timeout_in_seconds=600, is_headless=True):
+    is_headless: if False, a chrome browser will popup, 
+    else the operation will be done in background
+    '''
     if address is None or address == '':
-        raise Exception('address is required')
+        raise ValueError('address is required')
 
     address_encoded = quote(address)
-    url = f'https://lga-sa.maps.arcgis.com/apps/instant/lookup/index.html?appid=db6cce7b773746b4a1d4ce544435f9da&find={address_encoded}'
-    logging.info('Fetching council for ', address)
+    app_id = 'db6cce7b773746b4a1d4ce544435f9da'
+    url = f'https://lga-sa.maps.arcgis.com/apps/instant/lookup/index.html?appid={app_id}&find={address_encoded}'
+    logging.info(f'Fetching council for {address}')
     to_exclude = ['Results:1', '', 'Loading...']
     text = get_data_from_url(url, is_headless, to_exclude,
                              timeout_in_seconds, '//*[@id="resultsPanel"]')
@@ -125,17 +149,20 @@ def find_council_by_address(address, timeout_in_seconds=600, is_headless=True):
 
     return {'address': address, 'council_name': council_name, 'electoral_ward': electoral_ward}
 
-# Test scripts: useful for debugging above function
-# with default timeout, this generally gives data
-# print('council details ', find_council_by_address("130 L'Estrange Street, Glenunga"))
-
-# with less timeout, to check test timeout feature. Without timeout, there is possibility of infinite loop
-# print(find_council_by_address("130 L'Estrange Street, Glenunga", 2))
 
 def find_councils_by_addresses(addresses: list, is_headless=True, timeout_in_seconds=600):
+    '''
+    Find councils by addresses in parallel
+    Example: 
+    # with less timeout, to check test timeout feature. 
+    # Without timeout, there is possibility of infinite loop
+    # print(find_council_by_address("130 L'Estrange Street, Glenunga", 2))
+
+    # with default timeout, this generally gives data
+    # print('council details ', find_council_by_address("130 L'Estrange Street, Glenunga"))
+    '''
     # maximum number of concurrent requests at a time
-    MAXIMUM_CONCURRENT_REQUESTS = 3
-    semaphore = Semaphore(MAXIMUM_CONCURRENT_REQUESTS)
+    semaphore = Semaphore(get_maximum_concurrent_requests())
 
     threads = []
 
@@ -148,6 +175,7 @@ def find_councils_by_addresses(addresses: list, is_headless=True, timeout_in_sec
             except Exception as ex:
                 # simply log the exception, don't raise it further
                 logging.error(ex, exc_info=True)
+                raise ex
 
     all_councils = []
     for address in addresses:
@@ -163,19 +191,28 @@ def find_councils_by_addresses(addresses: list, is_headless=True, timeout_in_sec
 
 
 def find_address_from_sacommunity_website(url: str, is_headless=True, timeout_in_seconds=600):
-    return get_data_from_url(url, is_headless, [], timeout_in_seconds, '//*[@id="content-area"]/div/div[1]/div[2]/div[2]/div/div[1]/div[1]/div[2]')
+    '''
+    Find address from sa community website
+    '''
+    return get_data_from_url(url, 
+                             is_headless, 
+                             [], 
+                             timeout_in_seconds, 
+                             '//*[@id="content-area"]/div/div[1]/div[2]/div[2]/div/div[1]/div[1]/div[2]')
 
-# getting council name from sacommunity website based on xpath is not achievable, because the xpath differs based on the contents
+# getting council name from sacommunity website based on xpath is not achievable, 
+# because the xpath differs based on the contents
 # As the time of this writing, this urls https://sacommunity.org/org/208832-Burnside_Youth_Club and
-# https://sacommunity.org/org/196519-Sturt_Badminton_Club_Inc. has xpath of 
+# https://sacommunity.org/org/196519-Sturt_Badminton_Club_Inc. has xpath of
 # //*[@id="content-area"]/div/div[4]
 # //*[@id="content-area"]/div/div[5]
 # So it's okay for now to get the council name based on regular expression, thus used beautiful soup
-# def find_council_from_sacommunity_website(url: str, is_headless=True, timeout_in_seconds=600):
-#     return get_data_from_url(url, is_headless, [], timeout_in_seconds, '//*[@id="content-area"]/div/div[4]')
 
 def get_council_from_sacommunity_website(url):
-    url_response = requests.get(url)
+    '''
+    Get council from sacommunity website
+    '''
+    url_response = requests.get(url, timeout=get_default_timeout_in_seconds())
     soup = BeautifulSoup(url_response.content)
     council_identifier = "Council:"
     council_text = soup.find("div", string=re.compile(council_identifier))
@@ -184,7 +221,8 @@ def get_council_from_sacommunity_website(url):
     if council_text is not None:
         council_text = str(council_text)
         start_index = council_text.index(council_identifier)
-        council_name = council_text[start_index:].replace(council_identifier, '').replace("</div>","").strip()
+        council_name = council_text[start_index:].replace(
+            council_identifier, '').replace("</div>", "").strip()
 
     return council_name
 
@@ -195,9 +233,10 @@ def get_council_from_sacommunity_website(url):
 
 
 def find_addresses_from_sacommunity_website(urls: list, is_headless=True, timeout_in_seconds=600):
-    # maximum number of concurrent requests at a time
-    MAXIMUM_CONCURRENT_REQUESTS = 3
-    semaphore = Semaphore(MAXIMUM_CONCURRENT_REQUESTS)
+    '''
+    Retrieves addresses from the sa-community website for given lists of urls in parallel
+    '''
+    semaphore = Semaphore(get_maximum_concurrent_requests())
 
     threads = []
 
@@ -207,10 +246,11 @@ def find_addresses_from_sacommunity_website(urls: list, is_headless=True, timeou
                 addr = find_address_from_sacommunity_website(
                     url, is_headless, timeout_in_seconds)
                 council = get_council_from_sacommunity_website(url)
-                all_address.append({'url': url, 'address': addr, 'council_in_sacommunity_website': council})
+                all_address.append(
+                    {'url': url, 'address': addr, 'council_in_sacommunity_website': council})
             except Exception as ex:
-                # simply log the exception, don't raise it further
                 logging.error(ex, exc_info=True)
+                raise ex
 
     all_address = []
     for url in urls:

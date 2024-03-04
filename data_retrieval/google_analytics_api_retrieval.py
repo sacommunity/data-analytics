@@ -1,20 +1,15 @@
+import os
+import sys
+sys.path.insert(1, os.getcwd())
 from enum import Enum
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from datetime import date
-import os
-import sys
-# insert current path to system path, so that we can import python file
-# pwd = os.getcwd()
-# root_folder = 'data-analytics'
-# da_index = pwd.index(root_folder)
-# root_dir = os.path.join(pwd[0:da_index], root_folder)
-# sys.path.insert(1, root_dir)
-sys.path.insert(1, os.getcwd())
-from helpers.date_helper import convert_date_to_yyyy_mm_dd
+
 from helpers.string_helper import is_null_or_whitespace
+from helpers.date_helper import convert_date_to_yyyy_mm_dd
 
 class GoogleAuthenticationMethod(Enum):
     NoValue = 0
@@ -104,9 +99,14 @@ class GoogleAnalyticsApiRetrieval():
 
         return results
 
-    def get_batch_data(self, view_id: str, dimensions: list[str], start_date: date, end_date: date, metrics: list[str] = ['sessions'],
-                 page_size = 1000,
-                 page_token = None):
+    def get_batch_data(self,
+                       view_id: str,
+                       dimensions: list[str],
+                       start_date: date,
+                       end_date: date,
+                       metrics: list[str] = ['sessions'],
+                       page_size=1000,
+                       page_token=None):
         self.refresh_oauth_token()
         analytics = build('analyticsreporting', 'v4', credentials=self.creds)
 
@@ -119,31 +119,40 @@ class GoogleAnalyticsApiRetrieval():
                     'pageSize': page_size,
                     'pageToken': page_token,
                     'viewId': view_id,
-                    'dateRanges': [{'startDate': convert_date_to_yyyy_mm_dd(start_date), 'endDate': convert_date_to_yyyy_mm_dd(end_date)}],
+                    'dateRanges': [
+                        {
+                            'startDate': convert_date_to_yyyy_mm_dd(start_date), 
+                            'endDate': convert_date_to_yyyy_mm_dd(end_date)
+                        }],
                     'metrics': metrics_list,
                     'dimensions': dimensions_list,
-
                 }
             ]
         }
 
         return analytics.reports().batchGet(body=request_body).execute()
-        
 
-    def get_data(self, view_id: str, dimensions: list[str], start_date: date, end_date: date, metrics: list[str] = ['sessions'],
-                 page_size = 1000,
-                 page_token = None):
-        
+    def get_data(self, 
+                 view_id: str, 
+                 dimensions: list[str], 
+                 start_date: date, 
+                 end_date: date, 
+                 metrics: list[str] = ['sessions'],
+                 page_size=1000,
+                 page_token=None):
+
         results = []
-        
+
         while True:
-            response = self.get_batch_data(view_id, dimensions, start_date, end_date, metrics, page_size, page_token)
-            results.extend(self.extract_data_from_response(response, start_date, end_date))
+            response = self.get_batch_data(
+                view_id, dimensions, start_date, end_date, metrics, page_size, page_token)
+            results.extend(self.extract_data_from_response(
+                response, start_date, end_date))
             page_token = response['reports'][0].get('nextPageToken')
 
             if page_token is None:
                 break
-        
+
         return results
 
     def get_sessions_by_gender(self, start_date: date, end_date: date):
@@ -173,10 +182,8 @@ class GoogleAnalyticsApiRetrieval():
     # data = ga.get_sessions_by_gender(date(2021,12,25), date(2021,12,25))
     # print('data response ', data)
 
-
     # data = ga.get_sessions_by_age(date(2021,12,25), date(2021,12,25))
     # print('data response ', data)
-
 
     # data = ga.get_sessions_by_landing_page(date(2021,12,25), date(2021,12,25))
     # print('data response ', data)
