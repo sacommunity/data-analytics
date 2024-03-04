@@ -24,4 +24,8 @@ check warnings from pylint with following command (do not supress warning from p
 
 pylint $(git ls-files '*.py')
 
+Run unit tests
+
+python -m unittest discover -s ./tests/helpers -p "*_tests.py"
+
 

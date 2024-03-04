@@ -15,7 +15,7 @@ def convert_date_to_yyyy_mm_dd(date_obj: date | datetime):
 
 def convert_yyyy_mm_dd_to_date(date_str: str) -> date:
     """convert str of format yyyy-mm-dd date to date"""
-    return datetime.strptime(date_str, YYYY_MM_DD_DEFAULT_FORMAT)
+    return datetime.strptime(date_str, YYYY_MM_DD_DEFAULT_FORMAT).date()
 
 
 def convert_date_to_yyyy_mm_dd_hh_mm_ss(date_obj: date | datetime):

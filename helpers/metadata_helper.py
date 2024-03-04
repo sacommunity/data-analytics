@@ -6,7 +6,7 @@ import os
 
 # Comment these to run the methods from the current file as entry point
 from helpers.file_helper import create_directory_excluding_filename
-from helpers.date_helper import convert_date_to_yyyy_mm_dd, convert_date_to_yyyy_mm_dd_hh_mm_ss
+from helpers.date_helper import convert_date_to_yyyy_mm_dd, convert_date_to_yyyy_mm_dd_hh_mm_ss, convert_yyyy_mm_dd_hh_mm_ss_to_date, convert_yyyy_mm_dd_to_date
 
 DEFAULT_METADATA_FILE_PATH = "./metadata/metadata.json"
 
@@ -38,6 +38,7 @@ class DataModule(Enum):
 
 class JobConfig():
     """Job Config : data_frequency and data_module"""
+
     def __init__(self, data_frequency: DataFrequency,
                  data_module: DataModule) -> None:
         self.data_frequency = data_frequency
@@ -66,7 +67,6 @@ class MetadataDto():
         self.job_status = kwargs.get("job_status")
         self.failure_reason = kwargs.get("failure_reason")
         self.created_date = kwargs.get("created_date")
-        self.created_date_utc = kwargs.get("created_date_utc")
 
     def to_dict(self):
         """returns dictionary representation of the metadata dto"""
@@ -133,13 +133,33 @@ def load_all_metadata(file_path=DEFAULT_METADATA_FILE_PATH):
 
 def load_metadata(data_frequency: DataFrequency,
                   module: DataModule,
-                  file_path=DEFAULT_METADATA_FILE_PATH) -> MetadataDto:
+                  file_path=DEFAULT_METADATA_FILE_PATH,
+                  default_date: date = date(2021, 1, 1)) -> MetadataDto:
     """Load metadata"""
     all_metadata = load_all_metadata(file_path)
-    metadata = [m for m in all_metadata if m['module']['value'] ==
+    metadatas = [m for m in all_metadata if m['module']['value'] ==
                 module.value and m['data_frequency']['value'] == data_frequency.value]
-    if len(metadata) > 0:
-        return MetadataDto.from_dict(metadata[0])
+
+    if len(metadatas) > 0:
+        metadata = MetadataDto.from_dict(metadatas[0])
+        metadata.last_data_extraction_date = convert_yyyy_mm_dd_to_date(
+            metadata.last_data_extraction_date)
+        metadata.created_date["date_local"] = convert_yyyy_mm_dd_hh_mm_ss_to_date(
+            metadata.created_date["date_local"])
+        metadata.created_date['date_utc'] = convert_yyyy_mm_dd_hh_mm_ss_to_date(
+            metadata.created_date['date_utc'])
+
+        return metadata
+
+    if len(metadatas) == 0:
+        save_metadata(JobConfig(data_frequency, module),
+                      default_date,
+                      JobStatus.DEFAULT,
+                      failure_reason='',
+                      file_path=DEFAULT_METADATA_FILE_PATH)
+        # call the saved data again
+        print("Saved default first time start date, and returning the first date")
+        return load_metadata(data_frequency, module, file_path)
 
     return None
 
@@ -167,9 +187,9 @@ def save_metadata(job_config: JobConfig,
         f.write(new_metadatas_json)
 
 
-def get_start_date(last_data_extraction_date: date | datetime, job_status: int):
+def get_start_date(last_data_extraction_date: date | datetime, job_status: JobStatus):
     """if the last job was success, then return the next day, 
     else return the same day to repeat the proecss"""
-    if job_status == JobStatus.SUCCESS:
+    if job_status.get('value') == JobStatus.SUCCESS.value:
         return last_data_extraction_date + timedelta(days=1)
     return last_data_extraction_date
