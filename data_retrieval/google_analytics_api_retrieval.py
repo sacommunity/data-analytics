@@ -162,7 +162,9 @@ class GoogleAnalyticsApiRetrieval():
             ]
         }
 
+        # pylint: disable=no-member
         return analytics.reports().batchGet(body=request_body).execute()
+        # pylint: enable=no-member
 
     def get_data(self,
                  view_id: str,

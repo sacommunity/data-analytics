@@ -77,7 +77,7 @@ def get_data_from_url(url: str,
 
     options = get_chrome_options(is_headless)
     with webdriver.Chrome(options=options) as driver:
-        logging.info(f'Fetching data from url {url}')
+        logging.info('Fetching data from url %s', url)
         driver.get(url)
         text = ''
         while True:
@@ -126,7 +126,7 @@ def get_data_from_url(url: str,
 #             return None
 
 
-def find_council_by_address(address, timeout_in_seconds=600, is_headless=True):
+def find_council_by_address(address:str, timeout_in_seconds=600, is_headless=True):
     '''
     Finds council by address
     address: address where organization is located
@@ -141,7 +141,7 @@ def find_council_by_address(address, timeout_in_seconds=600, is_headless=True):
     app_id = 'db6cce7b773746b4a1d4ce544435f9da'
     base_url = 'https://lga-sa.maps.arcgis.com/apps/instant/lookup/index.html'
     url = f'{base_url}?appid={app_id}&find={address_encoded}'
-    logging.info(f'Fetching council for {address}')
+    logging.info('Fetching council for %s', address)
     to_exclude = ['Results:1', '', 'Loading...']
     text = get_data_from_url(url, is_headless, to_exclude,
                              timeout_in_seconds, '//*[@id="resultsPanel"]')
