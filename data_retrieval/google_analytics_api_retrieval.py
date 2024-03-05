@@ -180,10 +180,11 @@ class GoogleAnalyticsApiRetrieval():
         page_token = page_dto.page_token
 
         while True:
+            new_page_dto = PageDto(page_dto.page_size, page_token)
             response = self.get_batch_data(view_id=view_id,
                                            request_config=request_config,
                                            date_range=date_range,
-                                           page_dto=page_dto)
+                                           page_dto=new_page_dto)
             ga_api_retrieval_log.debug('request_config %s, date_range %s,\
                                         page_dto %s, response %s',
                                        request_config.to_dict(),
@@ -194,7 +195,11 @@ class GoogleAnalyticsApiRetrieval():
                 response, date_range))
             page_token = response['reports'][0].get('nextPageToken')
 
+            total_rows = response.get('reports')[0].get('data').get('totals')[0]['values'][0]
+            ga_api_retrieval_log.debug("Retrieved %s of %s ", len(results), total_rows)
+
             if page_token is None:
+                ga_api_retrieval_log.debug("All data has been retrieved")
                 break
 
         return results

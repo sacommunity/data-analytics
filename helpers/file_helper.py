@@ -22,6 +22,12 @@ def get_data_path_in_current_directory(data_frequency_name, module_name, date_ob
     """get data path in current directory"""
     return get_data_path(".", data_frequency_name, module_name, date_obj)
 
+def get_file_name_based_on_date(date_obj: date):
+    """get file name based on date"""
+    month_str = str(date_obj.month).zfill(2)
+    day_str = str(date_obj.day).zfill(2)
+    return f'{date_obj.year}_{month_str}_{day_str}'
+
 def get_data_path(root_dir, data_frequency_name: str, module_name:str, date_obj: date):
     """get data path
     Note: cannot have DataFrequency object because of circular dependency

@@ -1,11 +1,14 @@
 """Main Entry point for job run"""
+
 from datetime import datetime
+from logging.handlers import TimedRotatingFileHandler
 import sys
 import os
 import logging
 # insert current path to system path, so that we can import python file
 sys.path.insert(1, os.getcwd())
 # pylint: disable=wrong-import-position
+from helpers.file_helper import get_file_name_based_on_date
 from jobs.google_analytics_jobs import GoogleAnalyticsJobs
 # pylint: enable=wrong-import-position
 
@@ -14,10 +17,18 @@ def time_elapsed_seconds(start_date: datetime, end_date: datetime):
     """reurns time elapsed in seconds"""
     return (end_date - start_date).total_seconds()
 
+
 def setup_logging():
     """setup logging"""
-    logging.basicConfig(filename='./logs/ga_jobs.log',
-                        encoding='utf-8', level=logging.DEBUG)
+    log_file_name = get_file_name_based_on_date(datetime.now())
+    logging.basicConfig(encoding='utf-8',
+                        level=logging.DEBUG,
+                        handlers=[
+                            logging.StreamHandler(),
+                            TimedRotatingFileHandler(
+                                f'./logs/ga_jobs_{log_file_name}.log', when='midnight')
+                        ])
+
 
 def main():
     """main job to fetch data from google analytics"""
@@ -27,7 +38,7 @@ def main():
     job_start_date = datetime.now()
     # end_date = date(2022, 5, 1)
     end_date = datetime.now().date()
-    logging.info("Job Started at %s", datetime.now())
+    logger.info("Job Started at %s", datetime.now())
     logger.info("Running google analytics jobs till end date: %s", end_date)
 
     job_start_date = datetime.now()

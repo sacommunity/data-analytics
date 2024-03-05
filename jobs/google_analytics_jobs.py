@@ -31,7 +31,7 @@ class GoogleAnalyticsJobs():
         """Run Job"""
         job_log = f'data frequency: {data_frequency.name}, data module: {data_module.name}'
         metadata = load_metadata(data_frequency, data_module)
-        if metadata.job_status == JobStatus.IN_PROGRESS.value:
+        if metadata.job_status.get('value') == JobStatus.IN_PROGRESS.value:
             ga_jobs_log.info("Another job is in progress for %s", job_log)
             return
         start_date = get_start_date(
