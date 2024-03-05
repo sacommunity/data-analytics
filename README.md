@@ -35,7 +35,7 @@ https://pylint.readthedocs.io/en/stable/
 https://docs.python.org/3/library/logging.html
 
     Persistent logging enables to go through the error messages to debug. We are storing logs in file in logs folder
-    
+
 ## How to run code
 1. Jobs to fetch daily data (job_run.py)
 
@@ -74,4 +74,6 @@ https://docs.python.org/3/library/logging.html
 7. Automate Power BI report
 
 8. Automate Canva Report
+
+9. Make GUI for all the operations
 
