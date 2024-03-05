@@ -2,18 +2,21 @@
 from enum import Enum
 import os
 import sys
+import logging
 sys.path.insert(1, os.getcwd())
 
 # pylint: disable=wrong-import-position
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request
+from google_auth_oauthlib.flow import InstalledAppFlow
 
-from dtos.date_range_dto import DateRangeDto
-from helpers.date_helper import convert_date_to_yyyy_mm_dd
 from helpers.string_helper import is_null_or_whitespace
+from helpers.date_helper import convert_date_to_yyyy_mm_dd
+from dtos.date_range_dto import DateRangeDto
 # pylint: enable=wrong-import-position
+
+ga_api_retrieval_log = logging.getLogger(__name__)
 
 
 class GoogleAuthenticationMethod(Enum):
@@ -181,6 +184,12 @@ class GoogleAnalyticsApiRetrieval():
                                            request_config=request_config,
                                            date_range=date_range,
                                            page_dto=page_dto)
+            ga_api_retrieval_log.debug('request_config %s, date_range %s,\
+                                        page_dto %s, response %s',
+                                       request_config.to_dict(),
+                                       date_range.to_dict(),
+                                       page_dto.to_dict(),
+                                       response)
             results.extend(self.extract_data_from_response(
                 response, date_range))
             page_token = response['reports'][0].get('nextPageToken')

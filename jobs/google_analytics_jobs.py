@@ -11,6 +11,7 @@ from helpers.file_helper import save_list_to_csv, get_data_path
 from helpers.settings_helper import get_google_analytics_view_id_from_settings, \
     get_file_storage_root_folder_from_settings
 
+ga_jobs_log = logging.getLogger(__name__)
 
 class GoogleAnalyticsJobs():
     """Google Analytics Jobs"""
@@ -31,7 +32,7 @@ class GoogleAnalyticsJobs():
         job_log = f'data frequency: {data_frequency.name}, data module: {data_module.name}'
         metadata = load_metadata(data_frequency, data_module)
         if metadata.job_status == JobStatus.IN_PROGRESS.value:
-            logging.info("Another job is in progress for %s", job_log)
+            ga_jobs_log.info("Another job is in progress for %s", job_log)
             return
         start_date = get_start_date(
             metadata.last_data_extraction_date, metadata.job_status)
@@ -42,7 +43,7 @@ class GoogleAnalyticsJobs():
                                                  self.credentials_file_path,
                                                  self.token_file_path,
                                                  self.view_id)
-                logging.info("Running job %s for start date %s", job_log, start_date)
+                ga_jobs_log.info("Running job %s for start date %s", job_log, start_date)
                 save_metadata(JobConfig(data_frequency, data_module),
                               start_date,
                               JobStatus.IN_PROGRESS,
@@ -74,7 +75,7 @@ class GoogleAnalyticsJobs():
                 start_date = start_date + timedelta(days=1)
         except Exception as ex:
             failure_reason = str(ex)
-            logging.error(ex)
+            ga_jobs_log.error(ex)
             save_metadata(JobConfig(data_frequency, data_module),
                           start_date,
                           JobStatus.FAILED,

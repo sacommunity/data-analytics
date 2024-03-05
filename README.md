@@ -19,13 +19,25 @@ source sacommunity_data_analytics_venv/bin/activate
 pip install -r requirements.txt
 
 
-### pylint
+## Coding Convention
+1. pylint
 check warnings from pylint with following command (do not supress warning from pylint unless necessary, resolve as many warnings as possible)
 
 pylint $(git ls-files '*.py')
 
-Run unit tests
+2. Run unit tests
 
 python -m unittest discover -s ./tests/helpers -p "*_tests.py"
 
 
+## How to run code
+1. Jobs to fetch daily data (job_run.py)
+
+## Future Plan (TODO)
+2. Prepare report (Invoke Manually)
+
+i. User enters date range (say fiscal year)
+
+ii. System downloads 3 files data and transforms it into 5 files
+
+iii. Automate Power BI report

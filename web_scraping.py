@@ -17,6 +17,7 @@ import requests
 from bs4 import BeautifulSoup
 from helpers.settings_helper import get_maximum_concurrent_requests, get_default_timeout_in_seconds
 
+web_scraping_logger = logging.getLogger(__name__)
 
 def extract_value_replacing_prefix(text_array, prefix):
     '''
@@ -44,8 +45,8 @@ def on_backoff_handler(details):
     '''
     Handler function when the backoff occurs. It simply logs the message
     '''
-    logging.debug(details)
-    # logging.debug(
+    web_scraping_logger.debug(details)
+    # web_scraping_logger.debug(
     #     f"Backing off {details.get('wait'):0.1f}
     #     seconds after {details.get('tries')}
     #     tries calling function {details.get('target')} with args {details.get('args')}
@@ -77,7 +78,7 @@ def get_data_from_url(url: str,
 
     options = get_chrome_options(is_headless)
     with webdriver.Chrome(options=options) as driver:
-        logging.info('Fetching data from url %s', url)
+        web_scraping_logger.info('Fetching data from url %s', url)
         driver.get(url)
         text = ''
         while True:
@@ -100,7 +101,7 @@ def get_data_from_url(url: str,
                 break
 
     if text == '':
-        logging.info('Couldnot retrieve data. So, return None')
+        web_scraping_logger.info('Couldnot retrieve data. So, return None')
         return ''
 
     return text
@@ -141,7 +142,7 @@ def find_council_by_address(address:str, timeout_in_seconds=600, is_headless=Tru
     app_id = 'db6cce7b773746b4a1d4ce544435f9da'
     base_url = 'https://lga-sa.maps.arcgis.com/apps/instant/lookup/index.html'
     url = f'{base_url}?appid={app_id}&find={address_encoded}'
-    logging.info('Fetching council for %s', address)
+    web_scraping_logger.info('Fetching council for %s', address)
     to_exclude = ['Results:1', '', 'Loading...']
     text = get_data_from_url(url, is_headless, to_exclude,
                              timeout_in_seconds, '//*[@id="resultsPanel"]')
@@ -180,7 +181,7 @@ def find_councils_by_addresses(addresses: list, is_headless=True, timeout_in_sec
                 all_councils.append(council)
             except Exception as ex:
                 # simply log the exception, don't raise it further
-                logging.error(ex, exc_info=True)
+                web_scraping_logger.error(ex, exc_info=True)
                 raise ex
 
     all_councils = []
@@ -257,7 +258,7 @@ def find_addresses_from_sacommunity_website(urls: list, is_headless=True, timeou
                 all_address.append(
                     {'url': url, 'address': addr, 'council_in_sacommunity_website': council})
             except Exception as ex:
-                logging.error(ex, exc_info=True)
+                web_scraping_logger.error(ex, exc_info=True)
                 raise ex
 
     all_address = []

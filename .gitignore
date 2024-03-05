@@ -6,3 +6,4 @@ __pycache__/
 sacommunity_data_analytics_venv/
 metadata/
 settings/app_settings.json
+logs/
