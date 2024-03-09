@@ -28,7 +28,7 @@ jobs:
       with:
         node-version: '20'
     - name: Install npm packages
-      run: npm install
+      run: cd ./ui/da-app && npm install
     - name: Running lint
       run: npm run lint
 
