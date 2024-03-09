@@ -1,4 +1,5 @@
-name: Pylint, eslint, and Unit Tests
+name: Build
+run-name: ${{github.actor}} pushed code
 
 on: [push]
 
