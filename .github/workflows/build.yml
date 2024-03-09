@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./ui/data-app
+        working-directory: ui/data-app
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
