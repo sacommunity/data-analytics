@@ -30,7 +30,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-        #   cache: "npm"
 
       - name: Install npm packages
         run: npm ci
@@ -39,17 +38,13 @@ jobs:
       - name: Run tests
         run: node --test
       - name: Build nextjs
-        run: npm run build
-      #   - name: npm install, build, and test
-      #     run: |
-      #       npm install
-      #       npm run build
+        run: npm run
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: ui/data-app/.next
-        #   retention-days: 2
+          path: ui/da-app/.next
+          retention-days: 2
 
   deploy:
     runs-on: ubuntu-latest

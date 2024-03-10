@@ -45,4 +45,4 @@ jobs:
         with:
           name: nextjs-build-artifacts
           path: ui/da-app/.next
-          # retention-days: 2
+          retention-days: 2
