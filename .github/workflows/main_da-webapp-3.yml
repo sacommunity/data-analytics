@@ -12,6 +12,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui/da-app
 
     steps:
       - uses: actions/checkout@v4
@@ -27,14 +30,14 @@ jobs:
           npm run build --if-present
           npm run test --if-present
 
-      - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
+      # - name: Zip artifact for deployment
+      #   run: zip release.zip ./* -r
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v3
         with:
           name: node-app
-          path: release.zip
+          path: ui/da-app/.next
 
   deploy:
     runs-on: ubuntu-latest
@@ -51,8 +54,8 @@ jobs:
         with:
           name: node-app
 
-      - name: Unzip artifact for deployment
-        run: unzip release.zip
+      # - name: Unzip artifact for deployment
+      #   run: unzip release.zip
       
       - name: Login to Azure
         uses: azure/login@v1
