@@ -38,7 +38,7 @@ jobs:
       - name: Run tests
         run: node --test
       - name: Build nextjs
-        run: npm run
+        run: npm run build
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:

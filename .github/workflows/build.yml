@@ -20,29 +20,29 @@ jobs:
         run: |
           python -m unittest discover -s ./tests/helpers -p "*_tests.py"
 
-  build-nodejs:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ui/da-app
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Set up Nodejs environment
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Install npm packages
-        run: npm ci
-      - name: Run lint
-        run: npm run lint
-      - name: Run tests
-        run: node --test
-      - name: Build nextjs
-        run: npm run build
-      - name: Archive production artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: nextjs-build-artifacts
-          path: ui/da-app/.next
-          retention-days: 2
+  # build-nodejs:
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: ui/da-app
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #     - name: Set up Nodejs environment
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: "20"
+  #     - name: Install npm packages
+  #       run: npm ci
+  #     - name: Run lint
+  #       run: npm run lint
+  #     - name: Run tests
+  #       run: node --test
+  #     - name: Build nextjs
+  #       run: npm run build
+  #     - name: Archive production artifacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: nextjs-build-artifacts
+  #         path: ui/da-app/.next
+  #         retention-days: 2
