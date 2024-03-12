@@ -10,4 +10,4 @@ oauth2client
 pylint
 Flask
 gunicorn
-
+PyPDF2
