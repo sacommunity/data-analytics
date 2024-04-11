@@ -15,8 +15,8 @@ def create_directory_excluding_filename(file_path):
 def save_list_to_csv(data : list, file_path):
     """save list of data as csv"""
     create_directory(os.path.dirname(file_path))
-    df = pd.DataFrame(data)
-    df.to_csv(file_path, index=False)
+    dataframe = pd.DataFrame(data)
+    dataframe.to_csv(file_path, index=False)
 
 def get_data_path_in_current_directory(data_frequency_name, module_name, date_obj: date):
     """get data path in current directory"""

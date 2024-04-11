@@ -3,6 +3,9 @@
 import pandas as pd
 from PyPDF2 import PdfReader
 
+CU_DATASET_ROW_IDENTIFIER = 'support@sacommu'
+CU_DATASET_PAGE_HEADER_IDENTIFIER = 'https://sacommunity.org/admin/settings/datasets'
+
 def remove_texts(text: str, texts_to_remove: list[str]):
     """remove texts from text"""
     for text_to_remove in texts_to_remove:
@@ -12,11 +15,9 @@ def remove_texts(text: str, texts_to_remove: list[str]):
 
 def read_cu_dataset_settings_pdf(file_path: str, return_dataframe=False):
     """read CU dataset: CU datasets settings _ SAcommunity - Connecting Up Australia.pdf"""
-    row_identifier = 'support@sacommu'
-    page_header_identifier = 'https://sacommunity.org/admin/settings/datasets'
     texts_to_remove = [
-        row_identifier,
-        page_header_identifier,
+        CU_DATASET_ROW_IDENTIFIER,
+        CU_DATASET_PAGE_HEADER_IDENTIFIER,
         'nity.org',
         'support@sacommu'
     ]
@@ -25,19 +26,18 @@ def read_cu_dataset_settings_pdf(file_path: str, return_dataframe=False):
     total_pages = len(reader.pages)
     datasets = []
     for i, page in enumerate(reader.pages):
-        page_extract = page.extract_text()
-        page_lines = page_extract.splitlines()
+        page_lines = page.extract_text().splitlines()
 
-        for pl in page_lines:
-            if page_header_identifier in pl:
+        for page_line in page_lines:
+            if CU_DATASET_PAGE_HEADER_IDENTIFIER in page_line:
                 page_number = f'{i+1}/{total_pages}'
                 texts_to_remove.append(page_number)
-            if row_identifier in pl:
-                pps = remove_texts(pl, texts_to_remove)
-                pps_split = pps.split()
-                pps_split = [s.strip() for s in pps_split]
-                dataset_id = pps_split[0]
-                council_name = ' '.join(pps_split[1:])
+            if CU_DATASET_ROW_IDENTIFIER in page_line:
+                row_text = remove_texts(page_line, texts_to_remove)
+                row_text = row_text.split()
+                row_text = [s.strip() for s in row_text]
+                dataset_id = row_text[0]
+                council_name = ' '.join(row_text[1:])
                 datasets.append({'dataset_id': dataset_id,
                                 'council_name': council_name})
 
@@ -45,5 +45,3 @@ def read_cu_dataset_settings_pdf(file_path: str, return_dataframe=False):
         return pd.DataFrame(datasets)
 
     return datasets
-
-# remove_texts('fdas', ['d'])

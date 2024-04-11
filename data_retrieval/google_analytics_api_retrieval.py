@@ -196,8 +196,10 @@ class GoogleAnalyticsApiRetrieval():
                 response, date_range))
             page_token = response['reports'][0].get('nextPageToken')
 
-            total_rows = response.get('reports')[0].get('data').get('totals')[0]['values'][0]
-            ga_api_retrieval_log.debug("Retrieved %s of %s ", len(results), total_rows)
+            total_rows = response.get('reports')[0].get(
+                'data').get('totals')[0]['values'][0]
+            ga_api_retrieval_log.debug(
+                "Retrieved %s of %s ", len(results), total_rows)
 
             if page_token is None:
                 ga_api_retrieval_log.debug("All data has been retrieved")
@@ -214,16 +216,16 @@ class GoogleAnalyticsApiRetrieval():
                                  dimensions, metrics),
                              date_range=date_range,
                              page_dto=page)
-    
+
         # create dataframe
         data_df = pd.DataFrame(data)
         # rename columns
         data_df = data_df.rename(columns={
-            'ga:customVarValue1':'dataset_id', 
+            'ga:customVarValue1': 'dataset_id',
             'ga:sessions': 'sessions',
             'ga:userGender': 'gender'
-            })
-        
+        })
+
         return self.convert_data_types(data_df)
 
     def get_sessions_by_landing_page(self, date_range: DateRangeDto, page: PageDto):
@@ -236,18 +238,18 @@ class GoogleAnalyticsApiRetrieval():
                                  dimensions, metrics),
                              date_range=date_range,
                              page_dto=page)
-    
+
         # create dataframe
         data_df = pd.DataFrame(data)
         # rename columns
         data_df = data_df.rename(columns={
-            'ga:customVarValue1':'dataset_id', 
-            'ga:landingPagePath': 'landing_page', 
-            'ga:deviceCategory': 'device_category', 
-            'ga:sourceMedium':'source_medium', 
+            'ga:customVarValue1': 'dataset_id',
+            'ga:landingPagePath': 'landing_page',
+            'ga:deviceCategory': 'device_category',
+            'ga:sourceMedium': 'source_medium',
             'ga:sessions': 'sessions'
-            })
-        
+        })
+
         return self.convert_data_types(data_df)
 
     def get_sessions_by_age(self, date_range: DateRangeDto, page: PageDto):
@@ -259,22 +261,22 @@ class GoogleAnalyticsApiRetrieval():
                                  dimensions, metrics),
                              date_range=date_range,
                              page_dto=page)
-        
+
         # create dataframe
         data_df = pd.DataFrame(data)
         # rename columns
         data_df = data_df.rename(columns={
-            'ga:customVarValue1':'dataset_id', 
+            'ga:customVarValue1': 'dataset_id',
             'ga:sessions': 'sessions',
             'ga:userAgeBracket': 'age_bracket'
-            })
-        
-        return self.convert_data_types(data_df)
-    
-    def convert_data_types(self, df: pd.DataFrame) -> pd.DataFrame:
-        # convert data types
-        df['sessions'] = pd.to_numeric(df['sessions'])
-        df['start_date'] = pd.to_datetime(df['start_date'])
-        df['end_date'] = pd.to_datetime(df['end_date'])
+        })
 
-        return df
+        return self.convert_data_types(data_df)
+
+    def convert_data_types(self, dataframe: pd.DataFrame) -> pd.DataFrame:
+        """convert data types"""
+        dataframe['sessions'] = pd.to_numeric(dataframe['sessions'])
+        dataframe['start_date'] = pd.to_datetime(dataframe['start_date'])
+        dataframe['end_date'] = pd.to_datetime(dataframe['end_date'])
+
+        return dataframe

@@ -39,7 +39,7 @@ class GoogleAnalyticsJobs():
         try:
             # of the current job is in progress, then don't run another job
             while start_date < end_date:
-                ga = GoogleAnalyticsApiRetrieval(GoogleAuthenticationMethod.OAUTH,
+                google_analytics_api = GoogleAnalyticsApiRetrieval(GoogleAuthenticationMethod.OAUTH,
                                                  self.credentials_file_path,
                                                  self.token_file_path,
                                                  self.view_id)
@@ -52,11 +52,11 @@ class GoogleAnalyticsJobs():
                 page_dto = PageDto(1000, None)
                 data = None
                 if data_module.value == DataModule.AGE.value:
-                    data = ga.get_sessions_by_age(date_range, page_dto)
+                    data = google_analytics_api.get_sessions_by_age(date_range, page_dto)
                 elif data_module.value == DataModule.GENDER.value:
-                    data = ga.get_sessions_by_gender(date_range, page_dto)
+                    data = google_analytics_api.get_sessions_by_gender(date_range, page_dto)
                 elif data_module.value == DataModule.LANDING_PAGE.value:
-                    data = ga.get_sessions_by_landing_page(
+                    data = google_analytics_api.get_sessions_by_landing_page(
                         date_range, page_dto)
                 else:
                     raise ValueError(f'Invalid data module {data_module.value}')

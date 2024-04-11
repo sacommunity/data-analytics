@@ -7,8 +7,8 @@ DEFAULT_APP_SETTINGS_FILE_PATH = './settings/app_settings.json'
 def get_settings(file_path = DEFAULT_APP_SETTINGS_FILE_PATH):
     """Get all settings from settings json"""
     file_data = ''
-    with open(file_path, 'r', encoding="UTF-8") as f:
-        file_data = f.read()
+    with open(file_path, 'r', encoding="UTF-8") as file_obj:
+        file_data = file_obj.read()
 
     if file_data is None or file_data == '':
         return None

@@ -34,7 +34,7 @@ def main():
     """main job to fetch data from google analytics"""
     setup_logging()
     logger = logging.getLogger(__name__)
-    ga = GoogleAnalyticsJobs()
+    google_analytics_jobs = GoogleAnalyticsJobs()
     job_start_date = datetime.now()
     # end_date = date(2022, 5, 1)
     end_date = datetime.now().date()
@@ -43,7 +43,7 @@ def main():
 
     job_start_date = datetime.now()
     logger.info("Started running job AGE Daily %s", job_start_date)
-    ga.age_daily(end_date)
+    google_analytics_jobs.age_daily(end_date)
     job_end_date = datetime.now()
     logger.info("Completed running job AGE Daily %s . Time Elapsed %s",
                 job_end_date,
@@ -51,7 +51,7 @@ def main():
 
     job_start_date = datetime.now()
     logger.info("Started running job GENDER Daily %s", job_start_date)
-    ga.gender_daily(end_date)
+    google_analytics_jobs.gender_daily(end_date)
     job_end_date = datetime.now()
     logger.info("Completed running job GENDER Daily %s . Time Elapsed %s",
                 job_end_date,
@@ -59,7 +59,7 @@ def main():
 
     job_start_date = datetime.now()
     logger.info("Started running job Landing Page Daily %s", job_start_date)
-    ga.landing_page_daily(end_date)
+    google_analytics_jobs.landing_page_daily(end_date)
     job_end_date = datetime.now()
     logger.info("Completed running job Landing Page %s . Time Elapsed %s",
                 job_end_date,

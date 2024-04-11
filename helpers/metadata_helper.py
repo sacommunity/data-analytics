@@ -122,8 +122,8 @@ def load_all_metadata(file_path=DEFAULT_METADATA_FILE_PATH):
     if not os.path.exists(file_path):
         return metadata
 
-    with open(file_path, 'r', encoding='UTF-8') as f:
-        metadata = f.read()
+    with open(file_path, 'r', encoding='UTF-8') as file_obj:
+        metadata = file_obj.read()
 
     if metadata is None or metadata == "":
         return []
@@ -185,8 +185,8 @@ def save_metadata(job_config: JobConfig,
     other_metadata.append(metadata)
     new_metadatas_json = json.dumps(sort_metadatas(other_metadata))
 
-    with open(file_path, 'w', encoding='UTF-8') as f:
-        f.write(new_metadatas_json)
+    with open(file_path, 'w', encoding='UTF-8') as file_obj:
+        file_obj.write(new_metadatas_json)
 
 
 def get_start_date(last_data_extraction_date: date | datetime, job_status: JobStatus):
