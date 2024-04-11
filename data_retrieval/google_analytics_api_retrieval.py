@@ -10,6 +10,7 @@ from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
+import pandas as pd
 
 from helpers.string_helper import is_null_or_whitespace
 from helpers.date_helper import convert_date_to_yyyy_mm_dd
@@ -208,29 +209,72 @@ class GoogleAnalyticsApiRetrieval():
         """get session data by gender"""
         dimensions = ['customVarValue1', 'userGender']
         metrics = ["sessions"]
-        return self.get_data(view_id=self.view_id,
+        data = self.get_data(view_id=self.view_id,
                              request_config=GoogleAnalyticsRequestConfig(
                                  dimensions, metrics),
                              date_range=date_range,
                              page_dto=page)
+    
+        # create dataframe
+        data_df = pd.DataFrame(data)
+        # rename columns
+        data_df = data_df.rename(columns={
+            'ga:customVarValue1':'dataset_id', 
+            'ga:sessions': 'sessions',
+            'ga:userGender': 'gender'
+            })
+        
+        return self.convert_data_types(data_df)
 
     def get_sessions_by_landing_page(self, date_range: DateRangeDto, page: PageDto):
         """get session data with landing page"""
         dimensions = ['customVarValue1', 'landingPagePath',
                       'deviceCategory', 'sourceMedium']
         metrics = ["sessions"]
-        return self.get_data(view_id=self.view_id,
+        data = self.get_data(view_id=self.view_id,
                              request_config=GoogleAnalyticsRequestConfig(
                                  dimensions, metrics),
                              date_range=date_range,
                              page_dto=page)
+    
+        # create dataframe
+        data_df = pd.DataFrame(data)
+        # rename columns
+        data_df = data_df.rename(columns={
+            'ga:customVarValue1':'dataset_id', 
+            'ga:landingPagePath': 'landing_page', 
+            'ga:deviceCategory': 'device_category', 
+            'ga:sourceMedium':'source_medium', 
+            'ga:sessions': 'sessions'
+            })
+        
+        return self.convert_data_types(data_df)
 
     def get_sessions_by_age(self, date_range: DateRangeDto, page: PageDto):
         """get sessions data by age"""
         dimensions = ['customVarValue1', 'userAgeBracket']
         metrics = ["sessions"]
-        return self.get_data(view_id=self.view_id,
+        data = self.get_data(view_id=self.view_id,
                              request_config=GoogleAnalyticsRequestConfig(
                                  dimensions, metrics),
                              date_range=date_range,
                              page_dto=page)
+        
+        # create dataframe
+        data_df = pd.DataFrame(data)
+        # rename columns
+        data_df = data_df.rename(columns={
+            'ga:customVarValue1':'dataset_id', 
+            'ga:sessions': 'sessions',
+            'ga:userAgeBracket': 'age_bracket'
+            })
+        
+        return self.convert_data_types(data_df)
+    
+    def convert_data_types(self, df: pd.DataFrame) -> pd.DataFrame:
+        # convert data types
+        df['sessions'] = pd.to_numeric(df['sessions'])
+        df['start_date'] = pd.to_datetime(df['start_date'])
+        df['end_date'] = pd.to_datetime(df['end_date'])
+
+        return df
