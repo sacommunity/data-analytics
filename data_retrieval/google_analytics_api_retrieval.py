@@ -153,7 +153,7 @@ class GoogleAnalyticsApiRetrieval():
             metrics_len = len(metrics)
 
             if report.get('data').get('rows') is None:
-                raise Exception('No rows data')
+                raise ValueError('No rows data')
 
             for row in report.get('data').get('rows'):
                 result = {'start_date': date_range.start_date,
