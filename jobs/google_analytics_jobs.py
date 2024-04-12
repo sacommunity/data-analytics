@@ -1,7 +1,8 @@
 """Google Analytics Jobs Module"""
 import logging
 from datetime import date, timedelta
-from data_retrieval.google_analytics_api_retrieval import GoogleAnalyticsApiRetrieval, \
+from data_retrieval.google_analytics_api_retrieval import GoogleAnalyticsApiRetrieval,\
+    GoogleAnalyticsFilterClause, \
     GoogleAuthenticationMethod, PageDto
 from dtos.date_range_dto import DateRangeDto
 
@@ -48,16 +49,16 @@ class GoogleAnalyticsJobs():
                               start_date,
                               JobStatus.IN_PROGRESS,
                               file_path=self.metadata_file_path)
-                date_range = DateRangeDto(start_date, start_date)
-                page_dto = PageDto(1000, None)
+                filter_clause = GoogleAnalyticsFilterClause()
+                filter_clause.set_date_range(DateRangeDto(start_date, start_date))
+                filter_clause.set_page_dto(PageDto(10000, None))
                 data = None
                 if data_module.value == DataModule.AGE.value:
-                    data = google_analytics_api.get_sessions_by_age(date_range, page_dto)
+                    data = google_analytics_api.get_sessions_by_age(filter_clause)
                 elif data_module.value == DataModule.GENDER.value:
-                    data = google_analytics_api.get_sessions_by_gender(date_range, page_dto)
+                    data = google_analytics_api.get_sessions_by_gender(filter_clause)
                 elif data_module.value == DataModule.LANDING_PAGE.value:
-                    data = google_analytics_api.get_sessions_by_landing_page(
-                        date_range, page_dto)
+                    data = google_analytics_api.get_sessions_by_landing_page(filter_clause)
                 else:
                     raise ValueError(f'Invalid data module {data_module.value}')
 

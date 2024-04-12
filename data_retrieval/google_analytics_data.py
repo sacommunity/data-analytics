@@ -7,11 +7,9 @@ print(os.getcwd())
 # pylint: disable=wrong-import-position
 import uuid
 import logging
-from datetime import date
 import pandas as pd
-from data_retrieval.google_analytics_api_retrieval import PageDto, \
-    GoogleAnalyticsApiRetrieval, GoogleAuthenticationMethod
-from dtos.date_range_dto import DateRangeDto
+from data_retrieval.google_analytics_api_retrieval import GoogleAnalyticsFilterClause,\
+    GoogleAnalyticsApiRetrieval, GoogleAuthenticationMethod, PageDto
 from helpers.file_helper import create_directory_excluding_filename
 from helpers.settings_helper import get_google_analytics_view_id_from_settings,\
     get_file_storage_root_folder_from_settings
@@ -24,7 +22,10 @@ class GoogleAnalyticsData():
         self.oauth_credentials_filepath = oauth_credentials_filepath
         self.oauth_token_filepath = oauth_token_filepath
 
-    def save_df_to_csv(self, dataframe: pd.DataFrame, root_dir: str, run_id: str, module: str):
+    def save_df_to_csv(self, dataframe: pd.DataFrame,
+                       root_dir: str,
+                       run_id: str,
+                       module: str):
         """save dataframe to csv"""
         file_name = f'{module}.csv'
         file_path = os.path.join(root_dir, 'data', run_id, file_name)
@@ -43,10 +44,8 @@ class GoogleAnalyticsData():
         """filter data by dataset id"""
         return dataframe[dataframe['dataset_id'] == data_set_id]
 
-    def save_data(self, start_date: date, end_date: date):
+    def save_data(self, filter_clause: GoogleAnalyticsFilterClause):
         """save data: device category, source/medium, landing page, age, gender"""
-        view_id = get_google_analytics_view_id_from_settings()
-        self.ga_data_log.info('google analytics view id %s', view_id)
         root_dir = get_file_storage_root_folder_from_settings()
         self.ga_data_log.info('root_dir to store data is %s', root_dir)
         run_id = str(uuid.uuid4())
@@ -56,14 +55,11 @@ class GoogleAnalyticsData():
             google_authentication_method=GoogleAuthenticationMethod.OAUTH,
             oauth_credentials_filepath=self.oauth_credentials_filepath,
             oauth_token_filepath=self.oauth_token_filepath,
-            view_id=view_id)
-
-        date_range_dto = DateRangeDto(start_date, end_date)
-        page_dto = PageDto(10000, None)
+            view_id=get_google_analytics_view_id_from_settings())
 
         # 1, 2, 3. Data for device category, source medium and landing page
         self.ga_data_log.info('Getting data for landing page')
-        data_df = google_analytics_api.get_sessions_by_landing_page(date_range_dto, page_dto)
+        data_df = google_analytics_api.get_sessions_by_landing_page(filter_clause)
 
         # 1 device category
         device_category_df = self.group_data(data_df, ["dataset_id", "device_category","sessions"],
@@ -82,12 +78,14 @@ class GoogleAnalyticsData():
 
         # 4 Age
         self.ga_data_log.info("Getting age data")
-        age_df = google_analytics_api.get_sessions_by_age(date_range_dto, page_dto)
+        filter_clause.set_page_dto(PageDto(10000, None))
+        age_df = google_analytics_api.get_sessions_by_age(filter_clause)
         self.save_df_to_csv(age_df, root_dir, run_id, 'age')
 
         # 5 gender
         self.ga_data_log.info("Getting gender data")
-        gender_df = google_analytics_api.get_sessions_by_gender(date_range_dto, page_dto)
+        filter_clause.set_page_dto(PageDto(10000, None))
+        gender_df = google_analytics_api.get_sessions_by_gender(filter_clause)
         self.save_df_to_csv(gender_df, root_dir, run_id, 'gender')
 
         return run_id

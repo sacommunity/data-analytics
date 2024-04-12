@@ -44,6 +44,36 @@ class PageDto():
         return cls(**dict_obj)
 
 
+
+class GoogleAnalyticsFilterClause():
+    """filter clauses"""
+    def __init__(self) -> None:
+        self.dataset_id : str = None
+        self.date_range : DateRangeDto = None
+        self.page_dto: PageDto = None
+
+    def set_dataset_id(self, dataset_id: str):
+        """set dataset id"""
+        self.dataset_id = dataset_id
+
+    def set_date_range(self, date_range: DateRangeDto):
+        """set date range"""
+        self.date_range = date_range
+
+    def set_page_dto(self, page_dto: PageDto):
+        """set page dto"""
+        self.page_dto = page_dto
+
+    def to_dict(self):
+        """returns dictionary representation of dto"""
+        return self.__dict__
+
+    @classmethod
+    def from_dict(cls, dict_obj):
+        """creates new instance from dictionary"""
+        return cls(**dict_obj)
+
+
 class GoogleAnalyticsRequestConfig():
     """Request Config: dimensions and metrics"""
 
@@ -122,6 +152,9 @@ class GoogleAnalyticsApiRetrieval():
             metrics = metric_header.get('metricHeaderEntries')
             metrics_len = len(metrics)
 
+            if report.get('data').get('rows') is None:
+                raise Exception('No rows data')
+
             for row in report.get('data').get('rows'):
                 result = {'start_date': date_range.start_date,
                           'end_date': date_range.end_date}
@@ -136,11 +169,18 @@ class GoogleAnalyticsApiRetrieval():
 
         return results
 
+    def construct_filter(self, dimension_name: str, operator: str, expression: str):
+        """construct filter object"""
+        return {
+            'dimensionName': dimension_name,
+            'operator': operator,
+            'expressions': [expression]
+        }
+
     def get_batch_data(self,
                        view_id: str,
                        request_config: GoogleAnalyticsRequestConfig,
-                       date_range: DateRangeDto,
-                       page_dto: PageDto):
+                       filter_clause: GoogleAnalyticsFilterClause):
         """get batch data"""
         self.refresh_oauth_token()
         analytics = build('analyticsreporting', 'v4', credentials=self.creds)
@@ -150,20 +190,37 @@ class GoogleAnalyticsApiRetrieval():
         dimensions_list = [{'name': 'ga:' + d}
                            for d in request_config.dimensions]
 
-        request_body = {
-            'reportRequests': [
-                {
-                    'pageSize': page_dto.page_size,
-                    'pageToken': page_dto.page_token,
+        request = {
+                    'pageSize': filter_clause.page_dto.page_size,
+                    'pageToken': filter_clause.page_dto.page_token,
                     'viewId': view_id,
                     'dateRanges': [
                         {
-                            'startDate': convert_date_to_yyyy_mm_dd(date_range.start_date),
-                            'endDate': convert_date_to_yyyy_mm_dd(date_range.end_date)
+                            'startDate': convert_date_to_yyyy_mm_dd(
+                                filter_clause.date_range.start_date),
+                            'endDate': convert_date_to_yyyy_mm_dd(
+                                filter_clause.date_range.end_date)
                         }],
                     'metrics': metrics_list,
                     'dimensions': dimensions_list,
                 }
+
+        if filter_clause is not None:
+            filters = []
+            if not is_null_or_whitespace(filter_clause.dataset_id):
+                filters.append(self.construct_filter('ga:customVarValue1',
+                                                     'EXACT',
+                                                     filter_clause.dataset_id))
+
+            if len(filters) > 0:
+                request['dimensionFilterClauses'] = [
+                    {
+                        'filters' : filters
+                    }
+                ]
+        request_body = {
+            'reportRequests': [
+                request
             ]
         }
 
@@ -174,26 +231,26 @@ class GoogleAnalyticsApiRetrieval():
     def get_data(self,
                  view_id: str,
                  request_config: GoogleAnalyticsRequestConfig,
-                 date_range: DateRangeDto,
-                 page_dto: PageDto):
+                 filter_clause: GoogleAnalyticsFilterClause):
         """get all data"""
         results = []
-        page_token = page_dto.page_token
+        page_token = filter_clause.page_dto.page_token
 
         while True:
-            new_page_dto = PageDto(page_dto.page_size, page_token)
+            new_page_dto = PageDto(filter_clause.page_dto.page_size, page_token)
+            filter_clause.set_page_dto(new_page_dto)
             response = self.get_batch_data(view_id=view_id,
                                            request_config=request_config,
-                                           date_range=date_range,
-                                           page_dto=new_page_dto)
+                                           filter_clause=filter_clause)
             ga_api_retrieval_log.debug('request_config %s, date_range %s,\
-                                        page_dto %s, response %s',
+                                        page_dto %s, filter_clause %s, response %s',
                                        request_config.to_dict(),
-                                       date_range.to_dict(),
-                                       page_dto.to_dict(),
+                                       filter_clause.date_range.to_dict(),
+                                       filter_clause.page_dto.to_dict(),
+                                       filter_clause.to_dict(),
                                        response)
             results.extend(self.extract_data_from_response(
-                response, date_range))
+                response, filter_clause.date_range))
             page_token = response['reports'][0].get('nextPageToken')
 
             total_rows = response.get('reports')[0].get(
@@ -207,15 +264,15 @@ class GoogleAnalyticsApiRetrieval():
 
         return results
 
-    def get_sessions_by_gender(self, date_range: DateRangeDto, page: PageDto):
+    def get_sessions_by_gender(self,
+                               filter_clause: GoogleAnalyticsFilterClause):
         """get session data by gender"""
         dimensions = ['customVarValue1', 'userGender']
         metrics = ["sessions"]
         data = self.get_data(view_id=self.view_id,
                              request_config=GoogleAnalyticsRequestConfig(
                                  dimensions, metrics),
-                             date_range=date_range,
-                             page_dto=page)
+                             filter_clause=filter_clause)
 
         # create dataframe
         data_df = pd.DataFrame(data)
@@ -228,7 +285,8 @@ class GoogleAnalyticsApiRetrieval():
 
         return self.convert_data_types(data_df)
 
-    def get_sessions_by_landing_page(self, date_range: DateRangeDto, page: PageDto):
+    def get_sessions_by_landing_page(self,
+                                     filter_clause: GoogleAnalyticsFilterClause):
         """get session data with landing page"""
         dimensions = ['customVarValue1', 'landingPagePath',
                       'deviceCategory', 'sourceMedium']
@@ -236,8 +294,7 @@ class GoogleAnalyticsApiRetrieval():
         data = self.get_data(view_id=self.view_id,
                              request_config=GoogleAnalyticsRequestConfig(
                                  dimensions, metrics),
-                             date_range=date_range,
-                             page_dto=page)
+                             filter_clause=filter_clause)
 
         # create dataframe
         data_df = pd.DataFrame(data)
@@ -252,15 +309,15 @@ class GoogleAnalyticsApiRetrieval():
 
         return self.convert_data_types(data_df)
 
-    def get_sessions_by_age(self, date_range: DateRangeDto, page: PageDto):
+    def get_sessions_by_age(self,
+                            filter_clause: GoogleAnalyticsFilterClause):
         """get sessions data by age"""
         dimensions = ['customVarValue1', 'userAgeBracket']
         metrics = ["sessions"]
         data = self.get_data(view_id=self.view_id,
                              request_config=GoogleAnalyticsRequestConfig(
                                  dimensions, metrics),
-                             date_range=date_range,
-                             page_dto=page)
+                             filter_clause=filter_clause)
 
         # create dataframe
         data_df = pd.DataFrame(data)
