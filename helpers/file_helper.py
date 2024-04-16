@@ -4,6 +4,9 @@ import shutil
 from datetime import date
 import pandas as pd
 
+from helpers.enums import DataModule
+from helpers.settings_helper import get_file_storage_root_folder_from_settings
+
 def create_directory(dir_path: str):
     """create directory"""
     os.makedirs(dir_path, exist_ok=True)
@@ -49,3 +52,26 @@ def remove_directory(file_path):
     """removes directory with file contents"""
     dir_name = os.path.dirname(file_path)
     shutil.rmtree(dir_name)
+
+def save_df_to_csv(dataframe: pd.DataFrame, file_path: str):
+    """save dataframe to csv"""
+    create_directory_excluding_filename(file_path)
+    dataframe.to_csv(file_path, index=False)
+
+def get_run_file_path(run_id: str, module: DataModule):
+    """get run file path"""
+    file_name = f'{module.name.lower()}.csv'
+    root_dir = get_file_storage_root_folder_from_settings()
+    return os.path.join(root_dir, 'data', run_id, file_name)
+
+def save_run_file_to_csv(dataframe: pd.DataFrame,
+                       run_id: str,
+                       module: DataModule):
+    """save run file dataframe to csv"""
+    file_path = get_run_file_path(run_id, module)
+    save_df_to_csv(dataframe, file_path)
+
+def read_run_file(run_id: str, module: DataModule):
+    """read run file"""
+    file_path = get_run_file_path(run_id, module)
+    return pd.read_csv(file_path)

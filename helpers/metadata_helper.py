@@ -1,41 +1,16 @@
 """Metadata helper module"""
 from datetime import datetime, date, timedelta
-from enum import Enum
 import json
 import os
 
 # Comment these to run the methods from the current file as entry point
+from helpers.enums import DataFrequency, DataModule, JobStatus
 from helpers.file_helper import create_directory_excluding_filename
 from helpers.date_helper import convert_date_to_yyyy_mm_dd, \
     convert_date_to_yyyy_mm_dd_hh_mm_ss, convert_yyyy_mm_dd_hh_mm_ss_to_date, \
     convert_yyyy_mm_dd_to_date
 
 DEFAULT_METADATA_FILE_PATH = "./metadata/metadata.json"
-
-
-class JobStatus(Enum):
-    """job status"""
-    DEFAULT = 0
-    IN_PROGRESS = 1
-    SUCCESS = 2
-    FAILED = 3
-
-
-class DataFrequency(Enum):
-    """data frequency in which data are transformed / aggregated"""
-    DEFAULT = 0
-    DAILY = 1
-    WEEKLY = 2
-    MONTHLY = 3
-    YEARLY = 4
-
-
-class DataModule(Enum):
-    """Different data modules found in google analytics"""
-    DEFAULT = 0
-    AGE = 1
-    GENDER = 2
-    LANDING_PAGE = 3
 
 
 class JobConfig():

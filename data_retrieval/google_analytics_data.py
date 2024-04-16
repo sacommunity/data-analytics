@@ -1,6 +1,7 @@
 """Retrieve and save google analytics data"""
 import sys
 import os
+
 sys.path.insert(1, os.getcwd())
 print(os.getcwd())
 
@@ -10,9 +11,10 @@ import logging
 import pandas as pd
 from data_retrieval.google_analytics_api_retrieval import GoogleAnalyticsFilterClause,\
     GoogleAnalyticsApiRetrieval, GoogleAuthenticationMethod, PageDto
-from helpers.file_helper import create_directory_excluding_filename
+from helpers.file_helper import save_run_file_to_csv
 from helpers.settings_helper import get_google_analytics_view_id_from_settings,\
     get_file_storage_root_folder_from_settings
+from helpers.enums import DataModule
 # pylint: enable=wrong-import-position
 
 class GoogleAnalyticsData():
@@ -21,16 +23,6 @@ class GoogleAnalyticsData():
         self.ga_data_log = logging.getLogger(__name__)
         self.oauth_credentials_filepath = oauth_credentials_filepath
         self.oauth_token_filepath = oauth_token_filepath
-
-    def save_df_to_csv(self, dataframe: pd.DataFrame,
-                       root_dir: str,
-                       run_id: str,
-                       module: str):
-        """save dataframe to csv"""
-        file_name = f'{module}.csv'
-        file_path = os.path.join(root_dir, 'data', run_id, file_name)
-        create_directory_excluding_filename(file_path)
-        dataframe.to_csv(file_path, index=False)
 
     def group_data(self, dataframe: pd.DataFrame,
                    select_columns: list[str],
@@ -64,28 +56,28 @@ class GoogleAnalyticsData():
         # 1 device category
         device_category_df = self.group_data(data_df, ["dataset_id", "device_category","sessions"],
                                              ["dataset_id", "device_category"])
-        self.save_df_to_csv(device_category_df, root_dir, run_id, 'device_category')
+        save_run_file_to_csv(device_category_df, run_id, DataModule.DEVICE_CATEGORY)
 
         # 2 source medium
         source_medium_df = self.group_data(data_df, ["dataset_id", "source_medium","sessions"],
                                            ["dataset_id", "source_medium"])
-        self.save_df_to_csv(source_medium_df, root_dir, run_id, 'source_medium')
+        save_run_file_to_csv(source_medium_df, run_id, DataModule.SOURCE_MEDIUM)
 
         # 3 landing page
         landing_page_df = self.group_data(data_df, ["dataset_id", "landing_page","sessions"],
                                           ["dataset_id", "landing_page"])
-        self.save_df_to_csv(landing_page_df, root_dir, run_id, 'landing_page')
+        save_run_file_to_csv(landing_page_df, run_id, DataModule.LANDING_PAGE)
 
         # 4 Age
         self.ga_data_log.info("Getting age data")
         filter_clause.set_page_dto(PageDto(10000, None))
         age_df = google_analytics_api.get_sessions_by_age(filter_clause)
-        self.save_df_to_csv(age_df, root_dir, run_id, 'age')
+        save_run_file_to_csv(age_df, run_id, DataModule.AGE)
 
         # 5 gender
         self.ga_data_log.info("Getting gender data")
         filter_clause.set_page_dto(PageDto(10000, None))
         gender_df = google_analytics_api.get_sessions_by_gender(filter_clause)
-        self.save_df_to_csv(gender_df, root_dir, run_id, 'gender')
+        save_run_file_to_csv(gender_df, run_id, DataModule.GENDER)
 
         return run_id
