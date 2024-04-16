@@ -3,45 +3,49 @@
 import pandas as pd
 from PyPDF2 import PdfReader
 
-CU_DATASET_ROW_IDENTIFIER = 'support@sacommu'
-CU_DATASET_PAGE_HEADER_IDENTIFIER = 'https://sacommunity.org/admin/settings/datasets'
 
-def remove_texts(text: str, texts_to_remove: list[str]):
-    """remove texts from text"""
-    for text_to_remove in texts_to_remove:
-        text = text.replace(text_to_remove, '')
+class CuDatasetReader():
+    """read cu dataset pdf"""
+    def __init__(self) -> None:
+        self.row_identifier = 'support@sacommu'
+        self.page_header_identifier = 'https://sacommunity.org/admin/settings/datasets'
 
-    return text
+    def remove_texts(self, text: str, texts_to_remove: list[str]):
+        """remove texts from text"""
+        for text_to_remove in texts_to_remove:
+            text = text.replace(text_to_remove, '')
 
-def read_cu_dataset_settings_pdf(file_path: str, return_dataframe=False):
-    """read CU dataset: CU datasets settings _ SAcommunity - Connecting Up Australia.pdf"""
-    texts_to_remove = [
-        CU_DATASET_ROW_IDENTIFIER,
-        CU_DATASET_PAGE_HEADER_IDENTIFIER,
-        'nity.org',
-        'support@sacommu'
-    ]
+        return text
 
-    reader = PdfReader(file_path)
-    total_pages = len(reader.pages)
-    datasets = []
-    for i, page in enumerate(reader.pages):
-        page_lines = page.extract_text().splitlines()
+    def read_cu_dataset_settings_pdf(self, file_path: str, return_dataframe=False):
+        """read CU dataset: CU datasets settings _ SAcommunity - Connecting Up Australia.pdf"""
+        texts_to_remove = [
+            self.row_identifier,
+            self.page_header_identifier,
+            'nity.org',
+            'support@sacommu'
+        ]
 
-        for page_line in page_lines:
-            if CU_DATASET_PAGE_HEADER_IDENTIFIER in page_line:
-                page_number = f'{i+1}/{total_pages}'
-                texts_to_remove.append(page_number)
-            if CU_DATASET_ROW_IDENTIFIER in page_line:
-                row_text = remove_texts(page_line, texts_to_remove)
-                row_text = row_text.split()
-                row_text = [s.strip() for s in row_text]
-                dataset_id = row_text[0]
-                council_name = ' '.join(row_text[1:])
-                datasets.append({'dataset_id': dataset_id,
-                                'council_name': council_name})
+        reader = PdfReader(file_path)
+        total_pages = len(reader.pages)
+        datasets = []
+        for i, page in enumerate(reader.pages):
+            page_lines = page.extract_text().splitlines()
 
-    if return_dataframe:
-        return pd.DataFrame(datasets)
+            for page_line in page_lines:
+                if self.page_header_identifier in page_line:
+                    page_number = f'{i+1}/{total_pages}'
+                    texts_to_remove.append(page_number)
+                if self.row_identifier in page_line:
+                    row_text = self.remove_texts(page_line, texts_to_remove)
+                    row_text = row_text.split()
+                    row_text = [s.strip() for s in row_text]
+                    dataset_id = row_text[0]
+                    council_name = ' '.join(row_text[1:])
+                    datasets.append({'dataset_id': dataset_id,
+                                    'council_name': council_name})
 
-    return datasets
+        if return_dataframe:
+            return pd.DataFrame(datasets)
+
+        return datasets

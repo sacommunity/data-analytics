@@ -1,8 +1,8 @@
 """Google Analytics API methods"""
-from enum import Enum
 import os
 import sys
 import logging
+
 sys.path.insert(1, os.getcwd())
 
 # pylint: disable=wrong-import-position
@@ -12,84 +12,14 @@ from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 import pandas as pd
 
-from helpers.string_helper import is_null_or_whitespace
-from helpers.date_helper import convert_date_to_yyyy_mm_dd
+from helpers.string_helper import StringHelper
+from helpers.date_helper import DateHelper
+from helpers.enums import GoogleAuthenticationMethod
 from dtos.date_range_dto import DateRangeDto
+from dtos.page_dto import PageDto
+from dtos.google_analytics_filter_clause_dto import GoogleAnalyticsFilterClause
+from dtos.google_analytics_request_config_dto import GoogleAnalyticsRequestConfig
 # pylint: enable=wrong-import-position
-
-ga_api_retrieval_log = logging.getLogger(__name__)
-
-
-class GoogleAuthenticationMethod(Enum):
-    """Authentication methods"""
-    DEFAULT = 0
-    OAUTH = 1
-    SERVICE_ACCOUNT = 2
-
-
-class PageDto():
-    """request config page size and page token"""
-
-    def __init__(self, page_size, page_token) -> None:
-        self.page_size = page_size
-        self.page_token = page_token
-
-    def to_dict(self):
-        """returns dictionary representation of dto"""
-        return self.__dict__
-
-    @classmethod
-    def from_dict(cls, dict_obj):
-        """creates new instance from dictionary"""
-        return cls(**dict_obj)
-
-
-
-class GoogleAnalyticsFilterClause():
-    """filter clauses"""
-    def __init__(self) -> None:
-        self.dataset_id : str = None
-        self.date_range : DateRangeDto = None
-        self.page_dto: PageDto = None
-
-    def set_dataset_id(self, dataset_id: str):
-        """set dataset id"""
-        self.dataset_id = dataset_id
-
-    def set_date_range(self, date_range: DateRangeDto):
-        """set date range"""
-        self.date_range = date_range
-
-    def set_page_dto(self, page_dto: PageDto):
-        """set page dto"""
-        self.page_dto = page_dto
-
-    def to_dict(self):
-        """returns dictionary representation of dto"""
-        return self.__dict__
-
-    @classmethod
-    def from_dict(cls, dict_obj):
-        """creates new instance from dictionary"""
-        return cls(**dict_obj)
-
-
-class GoogleAnalyticsRequestConfig():
-    """Request Config: dimensions and metrics"""
-
-    def __init__(self, dimensions, metrics) -> None:
-        self.dimensions = dimensions
-        self.metrics = metrics
-
-    def to_dict(self):
-        """returns dictionary representation of dto"""
-        return self.__dict__
-
-    @classmethod
-    def from_dict(cls, dict_obj):
-        """creates new instance from dictionary"""
-        return cls(**dict_obj)
-
 
 class GoogleAnalyticsApiRetrieval():
     """Retrieve data from google analytics"""
@@ -98,30 +28,32 @@ class GoogleAnalyticsApiRetrieval():
                  oauth_credentials_filepath: str = '',
                  oauth_token_filepath: str = '',
                  view_id: str = '') -> None:
+        self.str_helper = StringHelper()
+        self.date_helper = DateHelper()
+        self.log = logging.getLogger(__name__)
         self.view_id = view_id
-        self.google_authentication_method = google_authentication_method
         if google_authentication_method == GoogleAuthenticationMethod.OAUTH:
-            if is_null_or_whitespace(oauth_credentials_filepath):
+            if self.str_helper.is_null_or_whitespace(oauth_credentials_filepath):
                 raise ValueError("oauth credentials filepath is required")
             self.oauth_credentials_filepath = oauth_credentials_filepath
 
-            if is_null_or_whitespace(oauth_token_filepath):
+            if self.str_helper.is_null_or_whitespace(oauth_token_filepath):
                 raise ValueError("oauth token filepath is required")
             self.oauth_token_filepath = oauth_token_filepath
 
-        self.scopes = ['https://www.googleapis.com/auth/analytics.readonly']
         self.creds = None
 
     def get_oauth_credentials(self):
         """get oauth credentials"""
+        scopes = ['https://www.googleapis.com/auth/analytics.readonly']
         if os.path.exists(self.oauth_token_filepath):
             self.creds = Credentials.from_authorized_user_file(
-                self.oauth_token_filepath, self.scopes)
+                self.oauth_token_filepath, scopes)
             if not self.creds or not self.creds.valid:
                 self.refresh_oauth_token()
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                self.oauth_credentials_filepath, self.scopes)
+                self.oauth_credentials_filepath, scopes)
             self.creds = flow.run_local_server(port=0)
             with open(self.oauth_token_filepath, 'w', encoding='UTF-8') as token:
                 token.write(self.creds.to_json())
@@ -196,9 +128,9 @@ class GoogleAnalyticsApiRetrieval():
                     'viewId': view_id,
                     'dateRanges': [
                         {
-                            'startDate': convert_date_to_yyyy_mm_dd(
+                            'startDate': self.date_helper.convert_date_to_yyyy_mm_dd(
                                 filter_clause.date_range.start_date),
-                            'endDate': convert_date_to_yyyy_mm_dd(
+                            'endDate': self.date_helper.convert_date_to_yyyy_mm_dd(
                                 filter_clause.date_range.end_date)
                         }],
                     'metrics': metrics_list,
@@ -207,7 +139,7 @@ class GoogleAnalyticsApiRetrieval():
 
         if filter_clause is not None:
             filters = []
-            if not is_null_or_whitespace(filter_clause.dataset_id):
+            if not self.str_helper.is_null_or_whitespace(filter_clause.dataset_id):
                 filters.append(self.construct_filter('ga:customVarValue1',
                                                      'EXACT',
                                                      filter_clause.dataset_id))
@@ -242,7 +174,7 @@ class GoogleAnalyticsApiRetrieval():
             response = self.get_batch_data(view_id=view_id,
                                            request_config=request_config,
                                            filter_clause=filter_clause)
-            ga_api_retrieval_log.debug('request_config %s, date_range %s,\
+            self.log.debug('request_config %s, date_range %s,\
                                         page_dto %s, filter_clause %s, response %s',
                                        request_config.to_dict(),
                                        filter_clause.date_range.to_dict(),
@@ -255,11 +187,11 @@ class GoogleAnalyticsApiRetrieval():
 
             total_rows = response.get('reports')[0].get(
                 'data').get('totals')[0]['values'][0]
-            ga_api_retrieval_log.debug(
+            self.log.debug(
                 "Retrieved %s of %s ", len(results), total_rows)
 
             if page_token is None:
-                ga_api_retrieval_log.debug("All data has been retrieved")
+                self.log.debug("All data has been retrieved")
                 break
 
         return results

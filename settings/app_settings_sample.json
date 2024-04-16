@@ -1,12 +1,14 @@
 {
     "GoogleAnalytics": {
-        "ViewId": ""
+        "ViewId": "",
+        "PageSize": 10000
     },
     "FileStorage": {
         "RootDir": "."
     },
-    "GlobalConfig": {
+    "WebScraping": {
         "MaximumConcurrentRequests": 3,
         "DefaultTimeoutInSeconds": 300
-    }
+    },
+    "SACommunityUrl": "https://sacommunity.org"
 }

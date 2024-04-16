@@ -8,7 +8,7 @@ import logging
 # insert current path to system path, so that we can import python file
 sys.path.insert(1, os.getcwd())
 # pylint: disable=wrong-import-position
-from helpers.file_helper import get_file_name_based_on_date
+from helpers.file_helper import FileHelper
 from jobs.google_analytics_jobs import GoogleAnalyticsJobs
 # pylint: enable=wrong-import-position
 
@@ -20,7 +20,8 @@ def time_elapsed_seconds(start_date: datetime, end_date: datetime):
 
 def setup_logging():
     """setup logging"""
-    log_file_name = get_file_name_based_on_date(datetime.now())
+    file_helper = FileHelper()
+    log_file_name = file_helper.get_file_name_based_on_date(datetime.now())
     logging.basicConfig(encoding='utf-8',
                         level=logging.DEBUG,
                         handlers=[
