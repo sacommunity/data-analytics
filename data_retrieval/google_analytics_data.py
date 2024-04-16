@@ -45,7 +45,7 @@ class GoogleAnalyticsData():
         """save data: device category, source/medium, landing page, age, gender"""
         root_dir = self.settings_helper.get_file_storage_root_folder()
         self.ga_data_log.info('root_dir to store data is %s', root_dir)
-        now_date = self.date_helper.convert_date_to_yyyy_mm_dd_hh_mm_ss(datetime.now)
+        now_date = self.date_helper.convert_date_to_yyyy_mm_dd_hh_mm_ss(datetime.now())
         run_id = now_date +'_' + str(uuid.uuid4())
 
         self.ga_data_log.info('Run id %s', run_id)

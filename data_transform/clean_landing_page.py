@@ -43,21 +43,18 @@ class CleanLandingPage():
     def get_sessions_by_organization(self, df_ga_orig: pd.DataFrame) -> pd.DataFrame:
         """get sessions by organization"""
         df_ga = df_ga_orig.dropna().copy()
-        df_ga['organization_id_name'] = df_ga['Landing Page'].apply(
+        df_ga['organization_id_name'] = df_ga['landing_page'].apply(
             self.clean_landing_page_text)
         df_ga['organization_id'] = df_ga['organization_id_name'].apply(
             self.get_organization_id)
         df_ga['organization_name'] = df_ga['organization_id_name'].apply(
             self.get_organization_name)
-        return df_ga[["Landing Page", "organization_id_name", "organization_id",
-                      "organization_name", "Sessions"]]
+        return df_ga[["landing_page", "organization_id_name", "organization_id",
+                      "organization_name", "sessions"]]
 
-    def group_sessions_by_organization(self, google_analytics_cleaned_df) -> pd.DataFrame:
-        """group sessions by organization"""
-        return google_analytics_cleaned_df.groupby(by=['organization_id']).sum("Sessions")
-
-    def process_data(self, sessions_data_df, sa_community_df) -> pd.DataFrame:
+    def process_data(self, landing_page_df, sa_community_df) -> pd.DataFrame:
         """process data"""
+        sessions_data_df = self.get_sessions_by_organization(landing_page_df)
         results = []
         for _, row in sessions_data_df.iterrows():
             org_id_str = row["organization_id"]
@@ -68,7 +65,7 @@ class CleanLandingPage():
             if org_id_str is not None:
                 org_id = int(org_id_str)
 
-            session_count = row["Sessions"]
+            session_count = row["sessions"]
 
             # organization name from sa-community file
             org_names_sa_community = sa_community_df[sa_community_df['ID_19']
@@ -90,7 +87,7 @@ class CleanLandingPage():
             # print('org_names_google ', org_names_google)
             landing_page = self.sacommunity_url + \
                 sessions_data_df[sessions_data_df["organization_id"]
-                                                  == org_id]["Landing Page"].values[0]
+                                                  == org_id]["landing_page"].values[0]
             results.append({
                 'org_id': org_id,
                 'landing_page': landing_page,

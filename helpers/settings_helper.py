@@ -32,7 +32,8 @@ class SettingsHelper():
             raise ValueError(f"{module} not found in app_settings")
 
         key_value = module_value.get(key)
-        if is_key_required and self.str_helper.is_null_or_whitespace(key_value):
+        if is_key_required and isinstance(key_value, str) \
+            and self.str_helper.is_null_or_whitespace(key_value):
             raise ValueError(f"{key} not found in app_settings")
 
         return key_value
