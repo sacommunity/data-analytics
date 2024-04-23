@@ -6,7 +6,8 @@ from PyPDF2 import PdfReader
 
 class CuDatasetReader():
     """read cu dataset pdf"""
-    def __init__(self, file_path = './settings/CU datasets settings _ SAcommunity - Connecting Up Australia.pdf') -> None:
+
+    def __init__(self, file_path='./settings/cu_dataset.pdf') -> None:
         self.file_path = file_path
         self.row_identifier = 'support@sacommu'
         self.page_header_identifier = 'https://sacommunity.org/admin/settings/datasets'
@@ -50,13 +51,14 @@ class CuDatasetReader():
             return pd.DataFrame(datasets)
 
         return datasets
-    
 
     def search_dataset_id_from_council_name(self, council_name: str):
+        """search dataset pdf for council and returns dataset id"""
         datasets = self.read_cu_dataset_settings_pdf(return_dataframe=False)
         # return datasets_df[datasets_df["council_name"].str.contains(council_name, case=False)]
-        datasets = [d for d in datasets if council_name in d['council_name'].lower()]
+        datasets = [
+            d for d in datasets if council_name in d['council_name'].lower()]
         if len(datasets) == 0:
             return None
-        
-        return datasets[0]        
+
+        return datasets[0]
