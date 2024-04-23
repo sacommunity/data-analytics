@@ -6,7 +6,8 @@ from PyPDF2 import PdfReader
 
 class CuDatasetReader():
     """read cu dataset pdf"""
-    def __init__(self) -> None:
+    def __init__(self, file_path = './settings/CU datasets settings _ SAcommunity - Connecting Up Australia.pdf') -> None:
+        self.file_path = file_path
         self.row_identifier = 'support@sacommu'
         self.page_header_identifier = 'https://sacommunity.org/admin/settings/datasets'
 
@@ -17,7 +18,7 @@ class CuDatasetReader():
 
         return text
 
-    def read_cu_dataset_settings_pdf(self, file_path: str, return_dataframe=False):
+    def read_cu_dataset_settings_pdf(self, return_dataframe=False):
         """read CU dataset: CU datasets settings _ SAcommunity - Connecting Up Australia.pdf"""
         texts_to_remove = [
             self.row_identifier,
@@ -26,7 +27,7 @@ class CuDatasetReader():
             'support@sacommu'
         ]
 
-        reader = PdfReader(file_path)
+        reader = PdfReader(self.file_path)
         total_pages = len(reader.pages)
         datasets = []
         for i, page in enumerate(reader.pages):
@@ -49,3 +50,13 @@ class CuDatasetReader():
             return pd.DataFrame(datasets)
 
         return datasets
+    
+
+    def search_dataset_id_from_council_name(self, council_name: str):
+        datasets = self.read_cu_dataset_settings_pdf(return_dataframe=False)
+        # return datasets_df[datasets_df["council_name"].str.contains(council_name, case=False)]
+        datasets = [d for d in datasets if council_name in d['council_name'].lower()]
+        if len(datasets) == 0:
+            return None
+        
+        return datasets[0]        
