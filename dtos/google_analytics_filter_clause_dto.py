@@ -5,10 +5,12 @@ from dtos.page_dto import PageDto
 
 class GoogleAnalyticsFilterClause():
     """filter clauses"""
+
     def __init__(self) -> None:
-        self.dataset_id : str = None
-        self.date_range : DateRangeDto = None
+        self.dataset_id: str = None
+        self.date_range: DateRangeDto = None
         self.page_dto: PageDto = None
+        self.council_name = ''
 
     def set_dataset_id(self, dataset_id: str):
         """set dataset id"""
@@ -21,6 +23,10 @@ class GoogleAnalyticsFilterClause():
     def set_page_dto(self, page_dto: PageDto):
         """set page dto"""
         self.page_dto = page_dto
+
+    def set_council_name(self, council_name: str):
+        """set council name"""
+        self.council_name = council_name
 
     def to_dict(self):
         """returns dictionary representation of dto"""

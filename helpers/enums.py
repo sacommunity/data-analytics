@@ -26,6 +26,8 @@ class DataModule(Enum):
     LANDING_PAGE = 3
     DEVICE_CATEGORY = 4
     SOURCE_MEDIUM = 5
+    LANDING_PAGE_CLEANED = 6
+    LANGING_PAGE_ERRORS = 7
 
 class GoogleAuthenticationMethod(Enum):
     """Authentication methods"""
