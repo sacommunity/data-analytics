@@ -14,11 +14,13 @@ import pandas as pd
 
 from helpers.string_helper import StringHelper
 from helpers.date_helper import DateHelper
-from helpers.enums import GoogleAuthenticationMethod
+from helpers.enums import GoogleApiVersion, GoogleAuthenticationMethod
+from helpers.settings_helper import SettingsHelper
 from dtos.date_range_dto import DateRangeDto
 from dtos.page_dto import PageDto
 from dtos.google_analytics_filter_clause_dto import GoogleAnalyticsFilterClause
 from dtos.google_analytics_request_config_dto import GoogleAnalyticsRequestConfig
+
 # pylint: enable=wrong-import-position
 
 class GoogleAnalyticsApiRetrieval():
@@ -26,12 +28,11 @@ class GoogleAnalyticsApiRetrieval():
 
     def __init__(self, google_authentication_method: GoogleAuthenticationMethod,
                  oauth_credentials_filepath: str = '',
-                 oauth_token_filepath: str = '',
-                 view_id: str = '') -> None:
+                 oauth_token_filepath: str = '') -> None:
         self.str_helper = StringHelper()
         self.date_helper = DateHelper()
+        self.settings_helper = SettingsHelper()
         self.log = logging.getLogger(__name__)
-        self.view_id = view_id
         if google_authentication_method == GoogleAuthenticationMethod.OAUTH:
             if self.str_helper.is_null_or_whitespace(oauth_credentials_filepath):
                 raise ValueError("oauth credentials filepath is required")
@@ -161,12 +162,19 @@ class GoogleAnalyticsApiRetrieval():
         # pylint: enable=no-member
 
     def get_data(self,
-                 view_id: str,
                  request_config: GoogleAnalyticsRequestConfig,
                  filter_clause: GoogleAnalyticsFilterClause):
         """get all data"""
         results = []
         page_token = filter_clause.page_dto.page_token
+
+        view_id = ''
+        if filter_clause.api_version == GoogleApiVersion.VERSION_3:
+            view_id = self.settings_helper.get_google_analytics_view_id_v3()
+        elif filter_clause.api_version == GoogleApiVersion.VERSION_4:
+            view_id = self.settings_helper.get_google_analytics_view_id_v4()
+        else:
+            raise ValueError(f'GoogleApiVersion: {filter_clause.api_version} is not supported')
 
         while True:
             new_page_dto = PageDto(filter_clause.page_dto.page_size, page_token)
@@ -196,87 +204,15 @@ class GoogleAnalyticsApiRetrieval():
 
         return results
 
-    def get_sessions_by_gender(self,
-                               filter_clause: GoogleAnalyticsFilterClause):
-        """get session data by gender"""
-        dimensions = ['customVarValue1', 'userGender']
-        metrics = ["sessions"]
-        data = self.get_data(view_id=self.view_id,
-                             request_config=GoogleAnalyticsRequestConfig(
-                                 dimensions, metrics),
-                             filter_clause=filter_clause)
-
-        # create dataframe
-        data_df = pd.DataFrame(data)
-        # rename columns
-        data_df = data_df.rename(columns={
-            'ga:customVarValue1': 'dataset_id',
-            'ga:sessions': 'sessions',
-            'ga:userGender': 'gender'
-        })
-
-        return self.convert_data_types(data_df)
-
-    def get_sessions_by_landing_page(self,
-                                     filter_clause: GoogleAnalyticsFilterClause):
-        """get session data with landing page"""
-        dimensions = ['customVarValue1', 'landingPagePath',
-                      'deviceCategory', 'sourceMedium']
-        metrics = ["sessions"]
-        data = self.get_data(view_id=self.view_id,
-                             request_config=GoogleAnalyticsRequestConfig(
-                                 dimensions, metrics),
-                             filter_clause=filter_clause)
-
-        # create dataframe
-        data_df = pd.DataFrame(data)
-        # rename columns
-        data_df = data_df.rename(columns={
-            'ga:customVarValue1': 'dataset_id',
-            'ga:landingPagePath': 'landing_page',
-            'ga:deviceCategory': 'device_category',
-            'ga:sourceMedium': 'source_medium',
-            'ga:sessions': 'sessions'
-        })
-
-        return self.convert_data_types(data_df)
-
-    def get_sessions_by_age(self,
-                            filter_clause: GoogleAnalyticsFilterClause):
-        """get sessions data by age"""
-        dimensions = ['customVarValue1', 'userAgeBracket']
-        metrics = ["sessions"]
-        data = self.get_data(view_id=self.view_id,
-                             request_config=GoogleAnalyticsRequestConfig(
-                                 dimensions, metrics),
-                             filter_clause=filter_clause)
-
-        # create dataframe
-        data_df = pd.DataFrame(data)
-        # rename columns
-        data_df = data_df.rename(columns={
-            'ga:customVarValue1': 'dataset_id',
-            'ga:sessions': 'sessions',
-            'ga:userAgeBracket': 'age_bracket'
-        })
-
-        return self.convert_data_types(data_df)
-
-    def get_page_views_and_sessions(self, filter_clause: GoogleAnalyticsFilterClause):
-        """get page views"""
-        dimensions = ['customVarValue1', 'landingPagePath']
-        metrics = ["pageviews", "sessions"]
-        data = self.get_data(view_id=self.view_id,
-                             request_config=GoogleAnalyticsRequestConfig(
-                                 dimensions, metrics),
-                             filter_clause=filter_clause)
-
-        data_df = pd.DataFrame(data)
-        return data_df
-
     def convert_data_types(self, dataframe: pd.DataFrame) -> pd.DataFrame:
         """convert data types"""
         dataframe['sessions'] = pd.to_numeric(dataframe['sessions'])
+        dataframe = self.convert_data_types_of_dates(dataframe)
+
+        return dataframe
+
+    def convert_data_types_of_dates(self, dataframe: pd.DataFrame) -> pd.DataFrame:
+        """convert data types"""
         dataframe['start_date'] = pd.to_datetime(dataframe['start_date'])
         dataframe['end_date'] = pd.to_datetime(dataframe['end_date'])
 

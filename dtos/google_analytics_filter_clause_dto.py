@@ -1,6 +1,7 @@
 """filter for google analytics api request"""
 from dtos.date_range_dto import DateRangeDto
 from dtos.page_dto import PageDto
+from helpers.enums import GoogleApiVersion
 
 
 class GoogleAnalyticsFilterClause():
@@ -11,6 +12,7 @@ class GoogleAnalyticsFilterClause():
         self.date_range: DateRangeDto = None
         self.page_dto: PageDto = None
         self.council_name = ''
+        self.api_version = GoogleApiVersion.DEFAULT
 
     def set_dataset_id(self, dataset_id: str):
         """set dataset id"""
@@ -27,6 +29,10 @@ class GoogleAnalyticsFilterClause():
     def set_council_name(self, council_name: str):
         """set council name"""
         self.council_name = council_name
+
+    def set_api_version(self, api_version: GoogleApiVersion):
+        """set api version"""
+        self.api_version = api_version
 
     def to_dict(self):
         """returns dictionary representation of dto"""

@@ -10,7 +10,7 @@ print(os.getcwd())
 import uuid
 import logging
 import pandas as pd
-from data_retrieval.google_analytics_api_retrieval import GoogleAnalyticsApiRetrieval
+from data_retrieval.google_analytics_api_retrieval_v3 import GoogleAnalyticsApiRetrievalV3
 from helpers.file_helper import FileHelper
 from helpers.settings_helper import SettingsHelper
 from helpers.date_helper import DateHelper
@@ -50,11 +50,10 @@ class GoogleAnalyticsData():
 
         self.ga_data_log.info('Run id %s', run_id)
 
-        google_analytics_api = GoogleAnalyticsApiRetrieval(
+        google_analytics_api = GoogleAnalyticsApiRetrievalV3(
             google_authentication_method=GoogleAuthenticationMethod.OAUTH,
             oauth_credentials_filepath=self.oauth_credentials_filepath,
-            oauth_token_filepath=self.oauth_token_filepath,
-            view_id=self.settings_helper.get_google_analytics_view_id())
+            oauth_token_filepath=self.oauth_token_filepath)
 
         # 1, 2, 3. Data for device category, source medium and landing page
         self.ga_data_log.info('Getting data for landing page')

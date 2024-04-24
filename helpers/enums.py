@@ -34,3 +34,9 @@ class GoogleAuthenticationMethod(Enum):
     DEFAULT = 0
     OAUTH = 1
     SERVICE_ACCOUNT = 2
+
+class GoogleApiVersion(Enum):
+    """Api Version"""
+    DEFAULT = 0
+    VERSION_3 = 1
+    VERSION_4 = 2

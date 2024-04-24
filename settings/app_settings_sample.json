@@ -1,6 +1,7 @@
 {
     "GoogleAnalytics": {
-        "ViewId": "",
+        "ViewId_V3": "",
+        "ViewId_V4": "",
         "PageSize": 10000
     },
     "FileStorage": {

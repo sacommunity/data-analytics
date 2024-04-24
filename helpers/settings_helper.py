@@ -38,9 +38,13 @@ class SettingsHelper():
 
         return key_value
 
-    def get_google_analytics_view_id(self):
+    def get_google_analytics_view_id_v3(self):
         """Get ViewId for google analytics"""
-        return self.get_value_by_key('GoogleAnalytics', 'ViewId')
+        return self.get_value_by_key('GoogleAnalytics', 'ViewId_V3')
+
+    def get_google_analytics_view_id_v4(self):
+        """Get ViewId for google analytics"""
+        return self.get_value_by_key('GoogleAnalytics', 'ViewId_V4')
 
     def get_google_analytics_page_size(self):
         """get page size to retrieve data"""

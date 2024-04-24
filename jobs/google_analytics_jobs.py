@@ -1,7 +1,7 @@
 """Google Analytics Jobs Module"""
 import logging
 from datetime import date, timedelta
-from data_retrieval.google_analytics_api_retrieval import GoogleAnalyticsApiRetrieval
+from data_retrieval.google_analytics_api_retrieval_v3 import GoogleAnalyticsApiRetrievalV3
 from dtos.date_range_dto import DateRangeDto
 
 from dtos.google_analytics_filter_clause_dto import GoogleAnalyticsFilterClause
@@ -37,11 +37,10 @@ class GoogleAnalyticsJobs():
         try:
             # of the current job is in progress, then don't run another job
             while start_date < end_date:
-                google_analytics_api = GoogleAnalyticsApiRetrieval(
+                google_analytics_api = GoogleAnalyticsApiRetrievalV3(
                     GoogleAuthenticationMethod.OAUTH,
                     self.credentials_file_path,
-                    self.token_file_path,
-                    self.settings_helper.get_google_analytics_view_id())
+                    self.token_file_path)
                 ga_jobs_log.info("Running job %s for start date %s", job_log, start_date)
                 self.metadata_helper.save_metadata(JobConfig(data_frequency, data_module),
                               start_date,
