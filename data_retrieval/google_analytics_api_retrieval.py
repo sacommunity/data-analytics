@@ -93,9 +93,9 @@ class GoogleAnalyticsApiRetrieval():
                 for i in range(dimensions_len):
                     result[dimensions[i]] = row.get('dimensions')[i]
 
+                metric_values = row.get('metrics')[0].get('values')
                 for i in range(metrics_len):
-                    result[metrics[i].get('name')] = row.get(
-                        'metrics')[i].get('values')[0]
+                    result[metrics[i].get('name')] = metric_values[i]
 
                 results.append(result)
 
@@ -261,6 +261,18 @@ class GoogleAnalyticsApiRetrieval():
         })
 
         return self.convert_data_types(data_df)
+
+    def get_page_views_and_sessions(self, filter_clause: GoogleAnalyticsFilterClause):
+        """get page views"""
+        dimensions = ['customVarValue1', 'landingPagePath']
+        metrics = ["pageviews", "sessions"]
+        data = self.get_data(view_id=self.view_id,
+                             request_config=GoogleAnalyticsRequestConfig(
+                                 dimensions, metrics),
+                             filter_clause=filter_clause)
+
+        data_df = pd.DataFrame(data)
+        return data_df
 
     def convert_data_types(self, dataframe: pd.DataFrame) -> pd.DataFrame:
         """convert data types"""
