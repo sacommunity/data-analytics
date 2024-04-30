@@ -1,11 +1,11 @@
 ### Google Analytics API
 
-API Explorer: https://ga-dev-tools.google/ga4/query-explorer/
+<!-- <a href="" target="_blank"></a> -->
 
-
-Dimensions and Metrics:  https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema
-
-
+<a href="https://ga-dev-tools.google/ga4/query-explorer/" target="_blank">API Explorer</a>
+ 
+<a href="https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema" target="_blank">Dimensions and Metrics</a>
+ 
 Data:
 1. Sessions by Landing Page
 
