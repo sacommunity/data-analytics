@@ -1,0 +1,16 @@
+{
+    "v3": {
+        "ga:sessions": "sessions",
+        "ga:userGender": "gender",
+        "ga:landingPagePath": "landing_page",
+        "ga:deviceCategory": "device_category",
+        "ga:sourceMedium": "source_medium",
+        "ga:userAgeBracket": "age_bracket",
+        "ga:customVarValue1": "dataset_id",
+        "ga:customVarValue2": "post_code",
+        "ga:customVarValue3": "state",
+        "ga:customVarValue4": "subject",
+        "ga:customVarValue5": "org_type",
+        "ga:pageviews": "page_views"
+    }
+}

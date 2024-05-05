@@ -17,6 +17,11 @@ Data:
 
 2. Sessions by Age
 
+    | Version | Metrics                                                      | Dimensions |
+    |---------|--------------------------------------------------------------|------------|
+    | 3       | customVarValue1 (DatasetId), landingPagePath, userAgeBracket | sessions   |
+    | 4       | customEvent:DatasetID, landingPage, userAgeBracket           | sessions   |
+
 3. Sessions by Gender
 
 4. Sessions by Source / Medium
