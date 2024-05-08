@@ -38,5 +38,5 @@ class GoogleAuthenticationMethod(Enum):
 class GoogleApiVersion(Enum):
     """Api Version"""
     DEFAULT = 0
-    VERSION_3 = 1
-    VERSION_4 = 2
+    VERSION_3 = 3
+    VERSION_4 = 4

@@ -118,9 +118,9 @@ class GoogleAnalyticsApiRetrieval():
         self.refresh_oauth_token()
         analytics = build('analyticsreporting', 'v4', credentials=self.creds)
 
-        metrics_list = [{'expression': 'ga:' + m}
+        metrics_list = [{'expression': m}
                         for m in request_config.metrics]
-        dimensions_list = [{'name': 'ga:' + d}
+        dimensions_list = [{'name': d}
                            for d in request_config.dimensions]
 
         request = {
@@ -203,17 +203,63 @@ class GoogleAnalyticsApiRetrieval():
                 break
 
         return results
+    
+    def get_columns_to_rename(self, version: GoogleApiVersion):
+        """returns columns to rename"""
+        if version == GoogleApiVersion.VERSION_3:
+            return {
+                "ga:sessions": "sessions",
+                "ga:userGender": "gender",
+                "ga:landingPagePath": "landing_page",
+                "ga:deviceCategory": "device_category",
+                "ga:sourceMedium": "source_medium",
+                "ga:userAgeBracket": "age_bracket",
+                "ga:customVarValue1": "dataset_id",
+                "ga:customVarValue2": "post_code",
+                "ga:customVarValue3": "state",
+                "ga:customVarValue4": "subject",
+                "ga:customVarValue5": "org_type",
+                "ga:pageviews": "page_views"
+            }
+        elif version == GoogleApiVersion.VERSION_4:
+            return {
+                "ga:customVarValue1": "dataset_id",
+                "ga:customVarValue2": "post_code",
+                "ga:customVarValue3": "state",
+                "ga:customVarValue4": "subject",
+                "ga:customVarValue5": "org_type",
+                "ga:sessions": "sessions",
+                "ga:landingPagePath": "landing_page",
+                "ga:pageviews": "page_views"
+            }
+       
+        raise ValueError(f"google Api Version {version} is Invalid.")
+
+    def get_data_as_df(self,
+                 request_config: GoogleAnalyticsRequestConfig,
+                 filter_clause: GoogleAnalyticsFilterClause):
+        data = self.get_data(request_config, filter_clause)
+
+        data_df = pd.DataFrame(data)
+        # rename columns
+
+        columns_to_rename = self.get_columns_to_rename(filter_clause.api_version)
+        for key, value in columns_to_rename.items():
+            if key in data_df.columns:
+                data_df = data_df.rename(columns={key:value})
+        
+        return self.convert_data_types(data_df)
 
     def convert_data_types(self, dataframe: pd.DataFrame) -> pd.DataFrame:
         """convert data types"""
-        dataframe['sessions'] = pd.to_numeric(dataframe['sessions'])
-        dataframe = self.convert_data_types_of_dates(dataframe)
+        numeric_columns = ['sessions']
+        for num_col in numeric_columns:
+            if num_col in dataframe.columns:
+                dataframe[num_col] = pd.to_numeric(dataframe[num_col])
 
-        return dataframe
-
-    def convert_data_types_of_dates(self, dataframe: pd.DataFrame) -> pd.DataFrame:
-        """convert data types"""
-        dataframe['start_date'] = pd.to_datetime(dataframe['start_date'])
-        dataframe['end_date'] = pd.to_datetime(dataframe['end_date'])
+        date_time_columns = ['start_date', 'end_date']
+        for date_col in date_time_columns:
+            if date_col in dataframe.columns:
+                dataframe[date_col] = pd.to_datetime(dataframe[date_col])
 
         return dataframe

@@ -1,4 +1,4 @@
-module,version,metrics,dimensions
+module,version,dimensions,metrics
 Sessions by Landing Page,3,"ga:customVarValue1, ga:landingPagePath", ga:sessions
 Sessions by Landing Page,4,"customEvent:DatasetID,  landingPage ", sessions
 Sessions by Device Category,3,"ga:customVarValue1, ga:deviceCategory", ga:sessions
