@@ -4,7 +4,11 @@
 from google_auth_oauthlib.flow import InstalledAppFlow
 
 # Define OAuth 2.0 scopes
-SCOPES = ['https://www.googleapis.com/auth/analytics.readonly']
+SCOPES = [
+    'https://www.googleapis.com/auth/analytics.readonly',
+    'https://www.googleapis.com/auth/analytics',
+    'openid'
+    ]
 CLIENT_SECRETS_FILE = './credentials/credentials.json'
 
 flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
